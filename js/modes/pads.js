@@ -13,7 +13,7 @@ const BASE_PADS = [
   { emoji: '🎩', label: 'Hats', code: 's("hh*8").gain(0.5)', group: 0 },
   { emoji: '👏', label: 'Clap', code: 's("~ ~ cp ~")', group: 0 },
   { emoji: '🌀', label: 'Kick 3/8', code: 's("bd(3,8)")', group: 0 },
-  { emoji: '🛎️', label: 'Ride', code: 's("rd*4").gain(0.4)', group: 0 },
+  { emoji: '🛎️', label: 'Ride', code: 's("crate_rd*4").gain(0.4)', group: 0 },
 
   { emoji: '🎸', label: 'Basse', code: 'note("c2 ~ c2 g2").sound("jvbass")', group: 1 },
   { emoji: '🔊', label: 'Basse 2', code: 'note("<c2 eb2 f2 g2>").sound("sawtooth").lpf(500)', group: 1 },
@@ -51,7 +51,10 @@ export function createPads(ctx) {
       const b = el('button', 'kz-pad' + (p.active ? ' on' : ''));
       b.style.setProperty('--pad-color', p.color);
       b.innerHTML = `<span class="kz-pad-emoji">${p.emoji}</span><span class="kz-pad-label">${p.label}</span>`;
+      let longPressed = false;
       b.addEventListener('click', () => {
+        // Un appui long vient d'ouvrir la bibliothèque : ne pas (dés)activer le pad en plus.
+        if (longPressed) { longPressed = false; return; }
         p.active = !p.active;
         b.classList.toggle('on', p.active);
         changed();
@@ -60,8 +63,9 @@ export function createPads(ctx) {
         b.addEventListener('contextmenu', (e) => { e.preventDefault(); editPad(p); });
         // appui long -> éditer le son
         let timer;
-        b.addEventListener('touchstart', () => { timer = setTimeout(() => editPad(p), 550); }, { passive: true });
+        b.addEventListener('touchstart', () => { longPressed = false; timer = setTimeout(() => { longPressed = true; editPad(p); }, 550); }, { passive: true });
         b.addEventListener('touchend', () => clearTimeout(timer));
+        b.addEventListener('touchmove', () => clearTimeout(timer), { passive: true });
       }
       grid.append(b);
     });
