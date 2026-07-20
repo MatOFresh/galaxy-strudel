@@ -5,7 +5,7 @@ import { createSequencer } from './modes/sequencer.js';
 import { createPads } from './modes/pads.js';
 import { openVisualizer } from './visualizer.js';
 import { icon } from './icons.js';
-import { toast } from './ui.js';
+import { el, toast } from './ui.js';
 
 const MODES = {
   sequencer: { title: 'Séquenceur', emoji: 'grid', desc: 'Une grille par instrument + Ultra DJ pour triturer le son.', factory: createSequencer },
@@ -53,6 +53,49 @@ function updatePlayBtn() {
 }
 
 function requestPlay() { if (app.transport.playing) doPlay(); }
+
+// ---- Code Window : montre le code Strudel généré en direct ----
+function escHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function highlightStrudel(code) {
+  let h = escHtml(code);
+  h = h.replace(/"([^"]*)"/g, '<span class="s">"$1"</span>');       // mini-notation / strings
+  h = h.replace(/\b(\d+\.?\d*)\b/g, '<span class="n">$1</span>');   // nombres
+  h = h.replace(/\b([a-zA-Z_]\w*)(\()/g, '<span class="f">$1</span>$2'); // fonctions
+  return h;
+}
+function openCodeWindow() {
+  if (document.querySelector('.kz-code-overlay')) return;
+  const overlay = el('div', 'kz-code-overlay');
+  const panel = el('div', 'kz-code-panel');
+  const head = el('div', 'kz-code-head');
+  const title = el('span', 'kz-code-title'); title.innerHTML = `${icon('code')} Code Window`;
+  const actions = el('div', 'kz-code-actions');
+  const copy = el('button', 'kz-code-btn2', 'Copier');
+  const close = el('button', 'kz-code-btn2'); close.innerHTML = icon('close');
+  actions.append(copy, close);
+  head.append(title, actions);
+  const pre = el('pre', 'kz-code-pre');
+  const codeEl = el('code');
+  pre.append(codeEl);
+  panel.append(head, pre);
+  overlay.append(panel);
+  document.body.append(overlay);
+
+  let last = null;
+  const refresh = () => {
+    const c = (app.mode && app.mode.buildCode) ? app.mode.buildCode() : '// choisis un mode';
+    if (c !== last) { last = c; codeEl.innerHTML = highlightStrudel(c); }
+  };
+  refresh();
+  const timer = setInterval(refresh, 150); // mise à jour live
+
+  const shut = () => { clearInterval(timer); overlay.remove(); };
+  close.addEventListener('click', shut);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) shut(); });
+  copy.addEventListener('click', () => {
+    try { navigator.clipboard.writeText(last || ''); toast('Code copié'); } catch (_) { toast('Copie indispo'); }
+  });
+}
 
 // Curseur de lecture synchronisé sur l'horloge audio.
 function tickLoop() {
@@ -131,6 +174,8 @@ function init() {
   // Icônes SVG des boutons statiques
   $('kz-home-btn').innerHTML = icon('home');
   $('kz-viz-btn').innerHTML = icon('kaleido');
+  $('kz-code-btn').innerHTML = icon('code') + ' Code';
+  $('kz-code-btn').addEventListener('click', openCodeWindow);
   updatePlayBtn();
 
   // Boutons niveau (présents sur accueil + studio) : robot = simple, cpu = expert

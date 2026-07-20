@@ -52,6 +52,7 @@ const I = {
   mute: S('<path d="M4 14V10h3l4-4v12l-4-4z" fill="currentColor" stroke="none"/><path d="M15 9.5l4 5M19 9.5l-4 5"/>'),
   headphones: S('<path d="M5 13v3a2 2 0 002 2h1v-6H7a2 2 0 00-2 2zM19 13v3a2 2 0 01-2 2h-1v-6h1a2 2 0 012 2z"/><path d="M5 13a7 7 0 0114 0"/>'),
   power: S('<path d="M12 4v8"/><path d="M7.5 7a7 7 0 109 0"/>'),
+  code: S('<path d="M9 8l-4 4 4 4M15 8l4 4-4 4M13 6l-2 12"/>'),
   // --- sons (catégories) ---
   kick: S('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/>'),
   snare: S('<ellipse cx="12" cy="8.5" rx="8" ry="2.6"/><path d="M4 8.5v5c0 1.5 3.6 2.6 8 2.6s8-1.1 8-2.6v-5"/><path d="M6 16l-1 3M18 16l1 3"/>'),
