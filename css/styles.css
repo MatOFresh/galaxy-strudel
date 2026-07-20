@@ -23,7 +23,9 @@
   --txt-dim: #868C99;
   --radius: 16px;
   --tap: 54px;
-  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  /* Polices techno embarquées (fonts.css) : Share Tech Mono (console) + Orbitron (display) */
+  --mono: "ShareTechMono", ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --display: "Orbitron", "ShareTechMono", ui-monospace, monospace;
   color-scheme: dark;
 }
 
@@ -57,11 +59,15 @@ button { font-family: inherit; cursor: pointer; color: var(--txt); }
 }
 .kz-home-head { margin-top: 6vh; }
 .kz-logo {
-  font-family: var(--mono);
-  font-size: clamp(1.9rem, 8.5vw, 3.1rem); font-weight: 800; margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.5rem, 7vw, 2.6rem); font-weight: 700; margin: 0;
   background: linear-gradient(105deg, var(--ice) 0%, #ffffff 45%, var(--amber) 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 1px 14px rgba(87, 209, 255, 0.18));
+  filter: drop-shadow(0 1px 16px rgba(87, 209, 255, 0.22));
+}
+/* Titres en Orbitron (techno display) */
+.kz-mode-title, .kz-mode-name, .kz-choose, .kz-song-title, .dj-pad-label span:first-child {
+  font-family: var(--display); font-weight: 700; letter-spacing: .01em;
 }
 .kz-tagline { color: var(--txt-dim); font-size: 1rem; margin: 8px 0 0; max-width: 340px; }
 .kz-choose { color: var(--txt); font-weight: 700; margin: 6px 0 -4px; font-size: 1.1rem; }
@@ -342,7 +348,7 @@ body { font-family: var(--mono); letter-spacing: .005em; }
 /* ---------- POLISH STYLE APPLE ---------- */
 /* Typo : tracking négatif sur les grands titres, matériaux translucides,
    feedback au toucher instantané, springs légers. */
-.kz-logo { letter-spacing: .04em; line-height: 1.02; text-wrap: balance; }
+.kz-logo { letter-spacing: .01em; line-height: 1.08; text-wrap: balance; }
 .kz-topbar, .kz-transport { -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); }
 .kz-topbar { border-bottom: 1px solid rgba(255,255,255,.08); box-shadow: 0 1px 0 rgba(255,255,255,.06) inset; }
 .kz-transport { border-top: 1px solid rgba(255,255,255,.10); }

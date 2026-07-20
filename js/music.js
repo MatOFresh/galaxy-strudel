@@ -36,6 +36,12 @@ export function fxChain(fx = {}) {
   if (fx.speed != null && fx.speed !== 1) out += `.speed(${num(fx.speed)})`;
   if (fx.attack != null && fx.attack > 0) out += `.attack(${num(fx.attack)})`;
   if (fx.release != null && fx.release > 0) out += `.release(${num(fx.release)})`;
+  // --- Effets Expert supplémentaires (fonctions Strudel) ---
+  if (fx.vowel != null && fx.vowel > 0) out += `.vowel("${'aeiou'[Math.min(4, Math.floor(fx.vowel * 5))]}")`; // filtre formant "voyelle"
+  if (fx.coarse != null && fx.coarse > 0) out += `.coarse(${Math.round(1 + fx.coarse * 20)})`;                // sous-échantillonnage (grésil)
+  if (fx.shape != null && fx.shape > 0) out += `.shape(${num(fx.shape * 0.85)})`;                              // saturation (waveshaper)
+  if (fx.phaser != null && fx.phaser > 0) out += `.phaser(${num(0.5 + fx.phaser * 4)}).phaserdepth(${num(0.3 + fx.phaser * 0.7)})`;
+  if (fx.tremolo != null && fx.tremolo > 0) out += `.tremolosync(${Math.round(2 + fx.tremolo * 14)}).tremolodepth(${num(fx.tremolo)})`;
   return out;
 }
 

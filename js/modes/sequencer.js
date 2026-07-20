@@ -38,10 +38,12 @@ export function createSequencer(ctx) {
     seedStep(hh, st.steps === 8 ? [0, 2, 4, 6] : [0, 2, 4, 6, 8, 10, 12, 14]);
     if (cp) seedStep(cp, [12]);
     st.melo = makeMelo('sawtooth');
-    // petite mélodie
+    // mélodie générée AU PIF à chaque lancement (une note par colonne, densité ~40%)
     const rows = st.melo.noteRows;
-    const pat = st.steps === 8 ? [0, null, 2, null, 1, null, 3, null] : [0, null, null, 2, null, null, 1, null, 3, null, null, 2, null, 1, null, 4];
-    st.melo.cells = pat.map((p) => (p == null ? null : Math.min(p, rows.length - 1)));
+    st.melo.cells = Array(st.steps).fill(null).map(() => (Math.random() < 0.42 ? Math.floor(Math.random() * rows.length) : null));
+    // garantit au moins 3 notes pour que ça sonne
+    let placed = st.melo.cells.filter((c) => c != null).length;
+    while (placed < 3) { const i = Math.floor(Math.random() * st.steps); if (st.melo.cells[i] == null) { st.melo.cells[i] = Math.floor(Math.random() * rows.length); placed++; } }
     if (ctx.getLevel() === 'expert') {
       st.bass = makeMelo('jvbass');
       st.bass.octaves = 1; st.bass.base = 2;
@@ -267,6 +269,13 @@ export function createSequencer(ctx) {
     box.append(slider(L('echo', 'Écho'), fx.delay ?? 0, (v) => { fx.delay = v; changed(); }));
     box.append(slider(L('crush', 'Crush'), fx.crush ?? 0, (v) => { fx.crush = v; changed(); }));
     box.append(slider(L('disto', 'Disto'), fx.distort ?? 0, (v) => { fx.distort = v; changed(); }));
+    // Effets Expert supplémentaires (explorés dans Strudel)
+    box.append(slider(L('voice', 'Voyelle'), fx.vowel ?? 0, (v) => { fx.vowel = v; changed(); }, { format: (v) => (v > 0 ? 'aeiou'[Math.min(4, Math.floor(v * 5))].toUpperCase() : 'off') }));
+    box.append(slider(L('filter', 'Aigu'), fx.hpf ?? 0, (v) => { fx.hpf = v; changed(); }));
+    box.append(slider(L('disto', 'Satur.'), fx.shape ?? 0, (v) => { fx.shape = v; changed(); }));
+    box.append(slider(L('chip', 'Grésil'), fx.coarse ?? 0, (v) => { fx.coarse = v; changed(); }));
+    box.append(slider(L('wah', 'Phaser'), fx.phaser ?? 0, (v) => { fx.phaser = v; changed(); }));
+    box.append(slider(L('echo', 'Trémolo'), fx.tremolo ?? 0, (v) => { fx.tremolo = v; changed(); }));
     return box;
   }
 

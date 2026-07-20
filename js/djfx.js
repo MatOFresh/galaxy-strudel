@@ -8,10 +8,11 @@ const num = (v) => Math.round(v * 1000) / 1000;
 export function defaultDjState() {
   return {
     filterOn: false, cutoff: 0.7, res: 0.2,   // pad XY (X=coupure, Y=résonance)
-    room: 0, delay: 0, crush: 0,
+    room: 0, delay: 0, crush: 0, coarse: 0,
     time: 'normal',   // 'slow' | 'normal' | 'fast'
     chop: 0,          // 0 = off
-    reverse: false, autowah: false,
+    reverse: false, autowah: false, phaser: false,
+    vowel: 0,         // 0 = off, sinon A/E/I/O/U
   };
 }
 
@@ -27,6 +28,9 @@ export function djFxChain(dj) {
   if (dj.room > 0.03) fx += `.room(${num(dj.room)})`;
   if (dj.delay > 0.03) fx += `.delay(${num(dj.delay * 0.75)})`;
   if (dj.crush > 0.03) fx += `.crush(${num(16 - dj.crush * 12)})`;
+  if (dj.coarse > 0.03) fx += `.coarse(${Math.round(1 + dj.coarse * 20)})`;
+  if (dj.vowel > 0) fx += `.vowel("${'aeiou'[Math.min(4, Math.floor(dj.vowel * 5))]}")`;
+  if (dj.phaser) fx += '.phaser(2).phaserdepth(0.8)';
   if (dj.time === 'slow') fx += '.slow(2)';
   else if (dj.time === 'fast') fx += '.fast(2)';
   if (dj.chop > 0) fx += `.chop(${dj.chop})`;
@@ -35,8 +39,8 @@ export function djFxChain(dj) {
 }
 
 export function djIsActive(dj) {
-  return !!(dj && (dj.filterOn || dj.autowah || dj.reverse || dj.chop || dj.time !== 'normal'
-    || dj.room > 0.03 || dj.delay > 0.03 || dj.crush > 0.03));
+  return !!(dj && (dj.filterOn || dj.autowah || dj.reverse || dj.chop || dj.phaser || dj.vowel > 0
+    || dj.time !== 'normal' || dj.room > 0.03 || dj.delay > 0.03 || dj.crush > 0.03 || dj.coarse > 0.03));
 }
 
 // Construit les contrôles DJ dans `container`. onChange() = ré-évaluation (live).
@@ -98,6 +102,18 @@ export function renderDjControls(container, dj, onChange) {
     fxRow.append(toggle('reverse', 'reverse', 'Envers'));
     fxRow.append(toggle('chop', 'chop', 'Hachoir', 8));
     fxRow.append(toggle('autowah', 'wah', 'Auto-wah'));
+    fxRow.append(toggle('phaser', 'wah', 'Phaser'));
+    // Voyelle : bouton qui cycle off -> A E I O U
+    const vw = el('button', 'dj-fx-btn' + (dj.vowel > 0 ? ' on' : ''));
+    const vl = dj.vowel > 0 ? 'aeiou'[Math.min(4, Math.floor(dj.vowel * 5))].toUpperCase() : 'off';
+    vw.innerHTML = `<span class="kz-emoji">${icon('voice')}</span><span>Voyelle ${vl}</span>`;
+    vw.addEventListener('click', () => {
+      const steps = [0, 0.1, 0.3, 0.5, 0.7, 0.9];
+      const i = steps.findIndex((s) => Math.abs(s - dj.vowel) < 0.05);
+      dj.vowel = steps[(i + 1) % steps.length];
+      build(); onChange();
+    });
+    fxRow.append(vw);
     container.append(fxRow);
 
     // Curseurs
@@ -105,6 +121,7 @@ export function renderDjControls(container, dj, onChange) {
     knobs.append(slider(`${icon('reverb')} Réverb`, dj.room, (v) => { dj.room = v; onChange(); }));
     knobs.append(slider(`${icon('echo')} Écho`, dj.delay, (v) => { dj.delay = v; onChange(); }));
     knobs.append(slider(`${icon('crush')} Crush`, dj.crush, (v) => { dj.crush = v; onChange(); }));
+    knobs.append(slider(`${icon('chip')} Grésil`, dj.coarse, (v) => { dj.coarse = v; onChange(); }));
     container.append(knobs);
 
     // Reset
