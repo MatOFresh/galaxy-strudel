@@ -4,14 +4,12 @@ import { ensureStrudel, play, stop, isPlaying } from './strudel-engine.js';
 import { createSequencer } from './modes/sequencer.js';
 import { createPads } from './modes/pads.js';
 import { createBlocks } from './modes/blocks.js';
-import { createUltraDJ } from './modes/ultradj.js';
 import { toast } from './ui.js';
 
 const MODES = {
-  sequencer: { title: 'Séquenceur', emoji: '🎛️', desc: 'Une grille par instrument. Allume les cases !', factory: createSequencer },
+  sequencer: { title: 'Séquenceur', emoji: '🎛️', desc: 'Une grille par instrument + Ultra DJ pour triturer le son.', factory: createSequencer },
   pads: { title: 'Pads', emoji: '🟪', desc: 'Des pads à lancer comme un Launchpad.', factory: createPads },
   blocks: { title: 'Blocs', emoji: '🧩', desc: 'Empile des blocs façon Scratch.', factory: createBlocks },
-  ultradj: { title: 'Ultra DJ', emoji: '🎚️', desc: 'Triture le son de ton morceau en live.', factory: createUltraDJ },
 };
 
 const app = {
@@ -19,7 +17,6 @@ const app = {
   bpm: 110,
   modeKey: null,
   mode: null,
-  sessionCode: null, // dernier morceau joué (hors DJ) — base pour l'Ultra DJ
   transport: { playing: false, startTime: 0, cps: 110 / 240 },
 };
 
@@ -33,8 +30,6 @@ function getAudioTime() {
 async function doPlay() {
   if (!app.mode) return;
   const code = app.mode.buildCode();
-  // Mémorise le morceau (hors DJ) pour que l'Ultra DJ puisse le triturer.
-  if (app.modeKey !== 'ultradj') app.sessionCode = code;
   const wasPlaying = app.transport.playing;
   app.transport.playing = true;     // état synchrone -> le bouton pause ne rate jamais
   updatePlayBtn();
@@ -82,7 +77,6 @@ function mountMode(key) {
     root: container,
     getLevel: () => app.level,
     getBpm: () => app.bpm,
-    getSession: () => app.sessionCode,
     isPlaying: () => app.transport.playing,
     requestPlay,
     registerBuildCode: () => {},

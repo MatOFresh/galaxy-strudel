@@ -240,6 +240,9 @@ button { font-family: inherit; cursor: pointer; color: var(--txt); }
 .dj-fx-btn.on { border-color: var(--cyan); background: rgba(56,249,215,.16); box-shadow: 0 0 16px rgba(56,249,215,.35); }
 .dj-knobs { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 14px; }
 .dj-reset { width: 100%; text-align: center; }
+.dj-controls { margin-top: 4px; }
+/* bouton de la barre d'outils quand le sous-menu DJ est ouvert / actif */
+.kz-icon-btn.active { border-color: var(--cyan); background: rgba(56,249,215,.16); box-shadow: 0 0 14px rgba(56,249,215,.3); }
 
 /* ---------- POLISH STYLE APPLE ---------- */
 /* Typo : tracking négatif sur les grands titres, matériaux translucides,

@@ -2,6 +2,7 @@
 import { el, slider, openSoundLibrary, iconButton, toast } from '../ui.js';
 import { findSound, KITS } from '../sounds.js';
 import { SCALES, buildNoteRows, drumRowToMini, meloGridToMini, fxChain, assemble } from '../music.js';
+import { defaultDjState, djFxChain, djIsActive, renderDjControls } from '../djfx.js';
 
 export function createSequencer(ctx) {
   // --- État ---
@@ -18,6 +19,9 @@ export function createSequencer(ctx) {
     songMode: false,  // true = joue le morceau (arrange), false = joue la boucle courante
     editing: null,    // index de la scène en cours d'édition dans la grille, ou null
     dropSnap: null,   // snapshot figé comme "le Drop"
+    // --- Sous-menu Ultra DJ (effets live sur le beat) ---
+    dj: defaultDjState(),
+    djOpen: false,
   };
 
   let uid = 0;
@@ -109,6 +113,7 @@ export function createSequencer(ctx) {
 
   function buildCode() {
     const bpm = ctx.getBpm();
+    const fx = djFxChain(st.dj); // effets Ultra DJ appliqués au motif final
     if (st.songMode && st.scenes.length) {
       const cpm = (Math.round((bpm / 4) * 1000) / 1000);
       const parts = st.scenes.map((sc) => {
@@ -117,9 +122,9 @@ export function createSequencer(ctx) {
             : stackStr(patternsOf(sc.snap));
         return `[${sc.bars}, ${body}]`;
       });
-      return `setcpm(${cpm})\narrange(\n  ${parts.join(',\n  ')}\n)`;
+      return `setcpm(${cpm})\narrange(\n  ${parts.join(',\n  ')}\n)${fx}`;
     }
-    return assemble(patternsOf(st), bpm);
+    return assemble(patternsOf(st), bpm) + fx;
   }
   ctx.registerBuildCode(buildCode);
 
@@ -136,6 +141,7 @@ export function createSequencer(ctx) {
     const tools = el('div', 'kz-seq-tools');
     tools.append(iconButton('🎲', 'Surprise', () => { randomize(); toast('Nouveau motif !'); }, 'small'));
     tools.append(iconButton('🧹', 'Effacer', () => { clearAll(); }, 'small'));
+    tools.append(iconButton('🎚️', 'Ultra DJ', () => { st.djOpen = !st.djOpen; render(); }, 'small' + ((st.djOpen || djIsActive(st.dj)) ? ' active' : '')));
     if (level === 'expert') {
       // sélecteur de gamme
       const scaleSel = el('select', 'kz-select');
@@ -160,6 +166,7 @@ export function createSequencer(ctx) {
     if (st.bass) grid.append(renderMeloTrack(st.bass, '🎸 Basse', level));
     root.append(grid);
 
+    if (st.djOpen) root.append(renderDjPanel());
     root.append(renderSongPanel());
 
     if (level === 'simple') {
@@ -291,6 +298,23 @@ export function createSequencer(ctx) {
     if (st.melo) st.melo.cells = st.melo.cells.map(() => null);
     if (st.bass) st.bass.cells = st.bass.cells.map(() => null);
     render(); changed();
+  }
+
+  // --- Sous-menu Ultra DJ ---
+  let djTimer = null;
+  function djChange() { if (djTimer) return; djTimer = setTimeout(() => { djTimer = null; changed(); }, 60); }
+  function renderDjPanel() {
+    const box = el('div', 'kz-song');
+    const head = el('div', 'kz-song-head');
+    head.append(el('span', 'kz-song-title', '🎚️ Ultra DJ — triture le son'));
+    const close = el('button', 'kz-song-toggle on', 'Fermer');
+    close.addEventListener('click', () => { st.djOpen = false; render(); });
+    head.append(close);
+    box.append(head);
+    const controls = el('div', 'dj-controls');
+    renderDjControls(controls, st.dj, djChange);
+    box.append(controls);
+    return box;
   }
 
   // --- Mode Morceau : panneau + actions ---
