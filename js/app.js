@@ -4,6 +4,7 @@ import { ensureStrudel, play, stop, isPlaying } from './strudel-engine.js';
 import { createSequencer } from './modes/sequencer.js';
 import { createPads } from './modes/pads.js';
 import { createBlocks } from './modes/blocks.js';
+import { openVisualizer } from './visualizer.js';
 import { toast } from './ui.js';
 
 const MODES = {
@@ -136,6 +137,7 @@ function init() {
   $('kz-play').addEventListener('click', () => (app.transport.playing ? doStop() : doPlay()));
   // Retour à l'accueil : le morceau continue de jouer (on ne coupe pas).
   $('kz-home-btn').addEventListener('click', () => { showScreen('home'); });
+  $('kz-viz-btn').addEventListener('click', openVisualizer);
 
   const tempo = $('kz-tempo');
   tempo.addEventListener('input', () => {

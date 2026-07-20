@@ -30,7 +30,8 @@ function initField() {
       tw: rnd() * Math.PI * 2,
     });
   }
-  const colors = ['#38f9d7', '#ff4ecd', '#a06bff', '#ffd166', '#5b8cff'];
+  // Duotone glace/ambre + acier, désaturé pour un halo ambiant discret.
+  const colors = ['#57D1FF', '#FF7A2C', '#2B7FE0', '#6B7688', '#FFB65A'];
   planets = [];
   for (let i = 0; i < 5; i++) {
     planets.push({
@@ -47,11 +48,11 @@ function frame() {
   t += 0.016;
   const { bass, mid, high, level } = readLevels();
 
-  // Fond dégradé spatial.
+  // Fond dégradé graphite (premium, neutre froid).
   const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, '#05010f');
-  g.addColorStop(0.5, '#0a0525');
-  g.addColorStop(1, '#12042e');
+  g.addColorStop(0, '#08090C');
+  g.addColorStop(0.5, '#0B0D12');
+  g.addColorStop(1, '#0F1319');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, w, h);
 

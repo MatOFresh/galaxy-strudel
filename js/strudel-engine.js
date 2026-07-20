@@ -139,3 +139,19 @@ export function readLevels() {
   const level = (bass + mid + high) / 3;
   return { bass, mid, high, level };
 }
+
+// Spectre de fréquences (Uint8Array 0..255) pour le visualizer.
+export function readSpectrum() {
+  const a = state.analyser;
+  if (!a || !state.freqData) return null;
+  a.getByteFrequencyData(state.freqData);
+  return state.freqData;
+}
+
+// Forme d'onde temporelle (Uint8Array, ~128 = silence) pour l'oscilloscope.
+export function readWaveform() {
+  const a = state.analyser;
+  if (!a || !state.timeData) return null;
+  a.getByteTimeDomainData(state.timeData);
+  return state.timeData;
+}
