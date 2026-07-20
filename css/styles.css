@@ -168,6 +168,38 @@ button { font-family: inherit; cursor: pointer; color: var(--txt); }
 .kz-select { background: #1a0f3a; color: var(--txt); border: 1.5px solid var(--panel-b); border-radius: 10px; padding: 8px; font-weight: 700; }
 .kz-inline-label { display: inline-flex; align-items: center; gap: 4px; }
 
+/* ---------- MODE MORCEAU ---------- */
+.kz-song {
+  margin-top: 16px; padding: 12px; border-radius: var(--radius);
+  background: var(--panel); border: 1.5px solid var(--panel-b); backdrop-filter: blur(8px);
+}
+.kz-song-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.kz-song-title { font-weight: 800; font-size: 1rem; flex: 1; }
+.kz-song-toggle {
+  border: 1.5px solid var(--panel-b); background: rgba(255,255,255,.06); color: var(--txt);
+  padding: 8px 14px; border-radius: 999px; font-weight: 800; font-size: .85rem;
+}
+.kz-song-toggle.on { background: linear-gradient(90deg, var(--cyan), var(--blue)); color: #06121a; border-color: transparent; box-shadow: 0 0 16px rgba(56,249,215,.5); }
+.kz-scenes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; min-height: 8px; }
+.kz-song-empty { color: var(--txt-dim); font-size: .85rem; }
+.kz-scene {
+  display: flex; align-items: stretch; border-radius: 12px; overflow: hidden;
+  border: 1.5px solid var(--panel-b); background: rgba(255,255,255,.05);
+}
+.kz-scene.k-break { border-color: var(--gold); }
+.kz-scene.k-drop { border-color: var(--magenta); box-shadow: 0 0 14px rgba(255,78,205,.4); }
+.kz-scene.editing { outline: 2px solid var(--cyan); outline-offset: 1px; }
+.kz-scene-main { border: none; background: transparent; color: var(--txt); display: flex; align-items: center; gap: 4px; padding: 8px 10px; font-weight: 800; }
+.kz-scene-main b { color: var(--cyan); }
+.kz-scene.k-drop .kz-scene-main b { color: var(--magenta); }
+.kz-scene.k-break .kz-scene-main b { color: var(--gold); }
+.kz-scene-bars { border: none; border-left: 1px solid var(--panel-b); background: rgba(255,255,255,.04); color: var(--txt-dim); padding: 0 8px; font-weight: 700; font-size: .78rem; font-variant-numeric: tabular-nums; }
+.kz-scene-del { border: none; border-left: 1px solid var(--panel-b); background: rgba(255,255,255,.04); color: var(--txt-dim); padding: 0 8px; font-size: .8rem; }
+.kz-scene-del:active, .kz-scene-bars:active { background: rgba(255,255,255,.12); }
+.kz-song-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.kz-chip.kz-drop { border-color: var(--magenta); background: rgba(255,78,205,.15); }
+.kz-chip.kz-break { border-color: var(--gold); background: rgba(255,209,102,.15); }
+
 /* ---------- SLIDERS ---------- */
 .kz-slider { display: flex; flex-direction: column; gap: 4px; }
 .kz-slider-top { display: flex; justify-content: space-between; font-size: .78rem; font-weight: 700; }

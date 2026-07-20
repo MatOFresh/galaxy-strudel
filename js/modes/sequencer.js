@@ -13,6 +13,11 @@ export function createSequencer(ctx) {
     melo: null,  // { soundId, cells:[noteIdx|null], gain, fx:{} }
     bass: null,
     playHead: 0,
+    // --- Mode Morceau (enchaînement de loops) ---
+    scenes: [],       // { kind:'loop'|'break'|'drop', bars, snap }
+    songMode: false,  // true = joue le morceau (arrange), false = joue la boucle courante
+    editing: null,    // index de la scène en cours d'édition dans la grille, ou null
+    dropSnap: null,   // snapshot figé comme "le Drop"
   };
 
   let uid = 0;
@@ -63,21 +68,58 @@ export function createSequencer(ctx) {
   }
 
   // --- Génération du code ---
-  function buildCode() {
+  const clone = (o) => (o == null ? null : JSON.parse(JSON.stringify(o)));
+  function snapshot() {
+    return { steps: st.steps, drums: clone(st.drums), melo: clone(st.melo), bass: clone(st.bass) };
+  }
+
+  // Patterns Strudel d'une source { drums, melo, bass } (état live OU snapshot).
+  function patternsOf(src) {
     const pats = [];
-    st.drums.forEach((d) => {
+    (src.drums || []).forEach((d) => {
       if (d.muted || !d.cells.some(Boolean)) return;
       const snd = findSound(d.soundId);
       const name = snd ? snd.name : d.soundId;
       pats.push(drumRowToMini(name, d.cells) + fxChain({ gain: d.gain, ...d.fx }));
     });
-    [st.melo, st.bass].forEach((m) => {
+    [src.melo, src.bass].forEach((m) => {
       if (!m || m.muted || !m.cells.some((c) => c != null)) return;
       const snd = findSound(m.soundId);
       const name = snd ? snd.name : m.soundId;
       pats.push(meloGridToMini(name, m.noteRows, m.cells) + fxChain({ gain: m.gain, ...m.fx }));
     });
-    return assemble(pats, ctx.getBpm());
+    return pats;
+  }
+  function stackStr(pats) {
+    if (!pats.length) return 'silence';
+    return `stack(\n    ${pats.join(',\n    ')}\n  )`;
+  }
+  // Le Drop = le groove complet + un crash sur le "1" pour l'impact.
+  function dropStackStr(snap) {
+    const pats = patternsOf(snap);
+    pats.push('s("cr ~ ~ ~ ~ ~ ~ ~").gain(0.6)');
+    return stackStr(pats);
+  }
+  // Le Break = montée automatique : filtre qui s'ouvre + roulement de caisse
+  // qui accélère + riser, puis ça explose sur le Drop juste après.
+  function breakStackStr(bars) {
+    const b = bars || 4;
+    return `stack(\n    s("bd ~ ~ ~"),\n    s("cp*<2 4 8 16>").gain(0.5),\n    s("wind").slow(${b}).gain(0.45)\n  ).lpf(saw.range(500,11000).slow(${b}))`;
+  }
+
+  function buildCode() {
+    const bpm = ctx.getBpm();
+    if (st.songMode && st.scenes.length) {
+      const cpm = (Math.round((bpm / 4) * 1000) / 1000);
+      const parts = st.scenes.map((sc) => {
+        const body = sc.kind === 'break' ? breakStackStr(sc.bars)
+          : sc.kind === 'drop' ? dropStackStr(sc.snap)
+            : stackStr(patternsOf(sc.snap));
+        return `[${sc.bars}, ${body}]`;
+      });
+      return `setcpm(${cpm})\narrange(\n  ${parts.join(',\n  ')}\n)`;
+    }
+    return assemble(patternsOf(st), bpm);
   }
   ctx.registerBuildCode(buildCode);
 
@@ -117,6 +159,8 @@ export function createSequencer(ctx) {
     if (st.melo) grid.append(renderMeloTrack(st.melo, '🎶 Mélodie', level));
     if (st.bass) grid.append(renderMeloTrack(st.bass, '🎸 Basse', level));
     root.append(grid);
+
+    root.append(renderSongPanel());
 
     if (level === 'simple') {
       // kits rapides
@@ -247,6 +291,85 @@ export function createSequencer(ctx) {
     if (st.melo) st.melo.cells = st.melo.cells.map(() => null);
     if (st.bass) st.bass.cells = st.bass.cells.map(() => null);
     render(); changed();
+  }
+
+  // --- Mode Morceau : panneau + actions ---
+  const KIND = { loop: { e: '🔁', l: 'Loop' }, break: { e: '💥', l: 'Break' }, drop: { e: '🔥', l: 'DROP' } };
+
+  function renderSongPanel() {
+    const box = el('div', 'kz-song');
+    const head = el('div', 'kz-song-head');
+    head.append(el('span', 'kz-song-title', '🎬 Morceau'));
+    const toggle = el('button', 'kz-song-toggle' + (st.songMode ? ' on' : ''), st.songMode ? '▶︎ Morceau' : '🔁 Boucle');
+    toggle.addEventListener('click', () => { st.songMode = !st.songMode; render(); changed(); });
+    head.append(toggle);
+    box.append(head);
+
+    const list = el('div', 'kz-scenes');
+    if (!st.scenes.length) {
+      list.append(el('span', 'kz-song-empty', "Ajoute des loops → ils s'enchaînent en morceau."));
+    }
+    st.scenes.forEach((sc, i) => {
+      const k = KIND[sc.kind] || KIND.loop;
+      const chip = el('div', 'kz-scene k-' + sc.kind + (st.editing === i ? ' editing' : ''));
+      const main = el('button', 'kz-scene-main');
+      main.innerHTML = `<b>${i + 1}</b><span>${k.e}</span>`;
+      main.title = k.l + ' — toucher pour éditer';
+      main.addEventListener('click', () => loadScene(i));
+      chip.append(main);
+      const bars = el('button', 'kz-scene-bars', sc.bars + '×');
+      bars.title = 'Nombre de mesures';
+      bars.addEventListener('click', () => { const seq = [1, 2, 4, 8]; sc.bars = seq[(seq.indexOf(sc.bars) + 1) % seq.length]; render(); changed(); });
+      chip.append(bars);
+      const del = el('button', 'kz-scene-del', '✕');
+      del.addEventListener('click', () => { st.scenes.splice(i, 1); if (st.editing === i) st.editing = null; else if (st.editing > i) st.editing--; render(); changed(); });
+      chip.append(del);
+      list.append(chip);
+    });
+    box.append(list);
+
+    const acts = el('div', 'kz-song-acts');
+    const add = el('button', 'kz-chip', '➕ Ajouter ce loop');
+    add.addEventListener('click', () => addLoop());
+    acts.append(add);
+    if (st.editing != null) {
+      const upd = el('button', 'kz-chip', '🔁 Mettre à jour ' + (st.editing + 1));
+      upd.addEventListener('click', () => updateScene());
+      acts.append(upd);
+    }
+    const drop = el('button', 'kz-chip kz-drop', '🔥 Définir le Drop' + (st.dropSnap ? ' ✓' : ''));
+    drop.addEventListener('click', () => defineDrop());
+    acts.append(drop);
+    const auto = el('button', 'kz-chip kz-break', '💥 Break auto + reprise');
+    auto.addEventListener('click', () => autoBreakDrop());
+    acts.append(auto);
+    box.append(acts);
+    return box;
+  }
+
+  function addLoop() { st.scenes.push({ kind: 'loop', bars: 4, snap: snapshot() }); st.editing = st.scenes.length - 1; st.songMode = true; render(); changed(); toast('Loop ' + st.scenes.length + ' ajouté 🎬'); }
+  function updateScene() { if (st.editing == null) return; st.scenes[st.editing].snap = snapshot(); render(); changed(); toast('Loop ' + (st.editing + 1) + ' mis à jour'); }
+  function loadScene(i) {
+    const snap = clone(st.scenes[i].snap);
+    if (!snap) return;
+    st.steps = snap.steps || st.steps;
+    st.drums = snap.drums || [];
+    st.melo = snap.melo;
+    st.bass = snap.bass;
+    st.editing = i;
+    render(); changed();
+  }
+  function defineDrop() { st.dropSnap = snapshot(); render(); toast('🔥 Drop défini ! Fais "Break auto".'); }
+  function autoBreakDrop() {
+    const d = st.dropSnap ? clone(st.dropSnap) : snapshot();
+    st.scenes = [
+      { kind: 'loop', bars: 4, snap: clone(d) },   // intro : le groove
+      { kind: 'break', bars: 4, snap: clone(d) },  // montée automatique
+      { kind: 'drop', bars: 8, snap: clone(d) },   // reprise qui explose
+    ];
+    st.songMode = true; st.editing = null;
+    render(); changed();
+    toast('💥 Morceau créé ! Appuie sur ▶︎ pour le drop');
   }
 
   // Curseur de lecture (surbrillance colonne courante).
