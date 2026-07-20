@@ -3,28 +3,31 @@
 // actifs se superposent pour former le morceau.
 import { el, openSoundLibrary, toast } from '../ui.js';
 import { assemble } from '../music.js';
+import { icon } from '../icons.js';
 
-const COLORS = ['#38f9d7', '#ff4ecd', '#a06bff', '#ffd166', '#5b8cff', '#ff8a5b'];
+// Duotone par groupe : glace (batterie), glace profonde (basse), ambre
+// (mélodie), acier (fx) — cohérent, pas de rainbow.
+const COLORS = ['#57D1FF', '#2B7FE0', '#FF7A2C', '#6B7688'];
 
-// Boucles de départ, groupées. `code` = pattern Strudel (sans tempo).
+// Boucles de départ, groupées. `emoji` = nom d'icône. `code` = pattern Strudel.
 const BASE_PADS = [
-  { emoji: '🥁', label: 'Kick 4', code: 's("bd*4")', group: 0 },
-  { emoji: '🪘', label: 'Snare', code: 's("~ sd ~ sd")', group: 0 },
-  { emoji: '🎩', label: 'Hats', code: 's("hh*8").gain(0.5)', group: 0 },
-  { emoji: '👏', label: 'Clap', code: 's("~ ~ cp ~")', group: 0 },
-  { emoji: '🌀', label: 'Kick 3/8', code: 's("bd(3,8)")', group: 0 },
-  { emoji: '🛎️', label: 'Ride', code: 's("crate_rd*4").gain(0.4)', group: 0 },
+  { emoji: 'kick', label: 'Kick 4', code: 's("bd*4")', group: 0 },
+  { emoji: 'snare', label: 'Snare', code: 's("~ sd ~ sd")', group: 0 },
+  { emoji: 'hat', label: 'Hats', code: 's("hh*8").gain(0.5)', group: 0 },
+  { emoji: 'clap', label: 'Clap', code: 's("~ ~ cp ~")', group: 0 },
+  { emoji: 'kick', label: 'Kick 3/8', code: 's("bd(3,8)")', group: 0 },
+  { emoji: 'cymbal', label: 'Ride', code: 's("crate_rd*4").gain(0.4)', group: 0 },
 
-  { emoji: '🎸', label: 'Basse', code: 'note("c2 ~ c2 g2").sound("jvbass")', group: 1 },
-  { emoji: '🔊', label: 'Basse 2', code: 'note("<c2 eb2 f2 g2>").sound("sawtooth").lpf(500)', group: 1 },
-  { emoji: '🎹', label: 'Mélodie', code: 'note("c4 eb4 g4 bb4").sound("sawtooth").room(0.4)', group: 2 },
-  { emoji: '✨', label: 'Arpège', code: 'note("c4 eb4 g4 c5 g4 eb4").fast(2).sound("triangle").room(0.5)', group: 2 },
-  { emoji: '🔔', label: 'Cloches', code: 'note("<c5 g4 eb5 bb4>").sound("sine").room(0.6).delay(0.3)', group: 2 },
-  { emoji: '🛸', label: 'Espace', code: 's("space").slow(2).room(0.7)', group: 3 },
-  { emoji: '🌏', label: 'Perc Est', code: 's("east*4").gain(0.6)', group: 3 },
-  { emoji: '🐦', label: 'Oiseaux', code: 's("birds").slow(4).gain(0.5)', group: 3 },
-  { emoji: '🤖', label: 'Robot', code: 's("numbers*4").crush(6)', group: 3 },
-  { emoji: '💥', label: 'Crash', code: 's("~ ~ ~ cr").gain(0.5)', group: 3 },
+  { emoji: 'bass', label: 'Basse', code: 'note("c2 ~ c2 g2").sound("jvbass")', group: 1 },
+  { emoji: 'bass', label: 'Basse 2', code: 'note("<c2 eb2 f2 g2>").sound("sawtooth").lpf(500)', group: 1 },
+  { emoji: 'synth', label: 'Mélodie', code: 'note("c4 eb4 g4 bb4").sound("sawtooth").room(0.4)', group: 2 },
+  { emoji: 'star', label: 'Arpège', code: 'note("c4 eb4 g4 c5 g4 eb4").fast(2).sound("triangle").room(0.5)', group: 2 },
+  { emoji: 'cymbal', label: 'Cloches', code: 'note("<c5 g4 eb5 bb4>").sound("sine").room(0.6).delay(0.3)', group: 2 },
+  { emoji: 'star', label: 'Espace', code: 's("space").slow(2).room(0.7)', group: 3 },
+  { emoji: 'perc', label: 'Perc Est', code: 's("east*4").gain(0.6)', group: 3 },
+  { emoji: 'star', label: 'Oiseaux', code: 's("birds").slow(4).gain(0.5)', group: 3 },
+  { emoji: 'crush', label: 'Robot', code: 's("numbers*4").crush(6)', group: 3 },
+  { emoji: 'cymbal', label: 'Crash', code: 's("~ ~ ~ cr").gain(0.5)', group: 3 },
 ];
 
 export function createPads(ctx) {
@@ -50,7 +53,7 @@ export function createPads(ctx) {
     pads.forEach((p) => {
       const b = el('button', 'kz-pad' + (p.active ? ' on' : ''));
       b.style.setProperty('--pad-color', p.color);
-      b.innerHTML = `<span class="kz-pad-emoji">${p.emoji}</span><span class="kz-pad-label">${p.label}</span>`;
+      b.innerHTML = `<span class="kz-pad-emoji">${icon(p.emoji)}</span><span class="kz-pad-label">${p.label}</span>`;
       let longPressed = false;
       b.addEventListener('click', () => {
         // Un appui long vient d'ouvrir la bibliothèque : ne pas (dés)activer le pad en plus.
@@ -72,7 +75,7 @@ export function createPads(ctx) {
     root.append(grid);
 
     const bar = el('div', 'kz-pads-bar');
-    const allOff = el('button', 'kz-chip', '⏹️ Tout couper');
+    const allOff = el('button', 'kz-chip'); allOff.innerHTML = `${icon('close')} Tout couper`;
     allOff.addEventListener('click', () => { pads.forEach((p) => (p.active = false)); render(); changed(); });
     bar.append(allOff);
     if (level === 'expert') {

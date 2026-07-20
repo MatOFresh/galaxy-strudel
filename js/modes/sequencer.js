@@ -3,6 +3,7 @@ import { el, slider, openSoundLibrary, iconButton, toast } from '../ui.js';
 import { findSound, KITS } from '../sounds.js';
 import { SCALES, buildNoteRows, drumRowToMini, meloGridToMini, fxChain, assemble } from '../music.js';
 import { defaultDjState, djFxChain, djIsActive, renderDjControls } from '../djfx.js';
+import { icon } from '../icons.js';
 
 export function createSequencer(ctx) {
   // --- État ---
@@ -139,9 +140,9 @@ export function createSequencer(ctx) {
 
     // Barre outils
     const tools = el('div', 'kz-seq-tools');
-    tools.append(iconButton('🎲', 'Surprise', () => { randomize(); toast('Nouveau motif !'); }, 'small'));
-    tools.append(iconButton('🧹', 'Effacer', () => { clearAll(); }, 'small'));
-    tools.append(iconButton('🎚️', 'Ultra DJ', () => { st.djOpen = !st.djOpen; render(); }, 'small' + ((st.djOpen || djIsActive(st.dj)) ? ' active' : '')));
+    tools.append(iconButton(icon('dice'), 'Surprise', () => { randomize(); toast('Nouveau motif !'); }, 'small'));
+    tools.append(iconButton(icon('eraser'), 'Effacer', () => { clearAll(); }, 'small'));
+    tools.append(iconButton(icon('sliders'), 'Ultra DJ', () => { st.djOpen = !st.djOpen; render(); }, 'small' + ((st.djOpen || djIsActive(st.dj)) ? ' active' : '')));
     if (level === 'expert') {
       // sélecteur de gamme
       const scaleSel = el('select', 'kz-select');
@@ -149,21 +150,21 @@ export function createSequencer(ctx) {
         const o = el('option', null, s); o.value = s; if (s === st.scale) o.selected = true; scaleSel.append(o);
       });
       scaleSel.addEventListener('change', () => { st.scale = scaleSel.value; rebuildScales(); render(); changed(); });
-      const sl = el('label', 'kz-inline-label', '🎼'); sl.append(scaleSel);
+      const sl = el('label', 'kz-inline-label'); sl.innerHTML = icon('scale'); sl.append(scaleSel);
       tools.append(sl);
       // nombre de pas
       const stepSel = el('select', 'kz-select');
       [8, 16].forEach((n) => { const o = el('option', null, n + ' pas'); o.value = n; if (n === st.steps) o.selected = true; stepSel.append(o); });
       stepSel.addEventListener('change', () => { st.steps = +stepSel.value; resizeTracks(); render(); changed(); });
       tools.append(stepSel);
-      tools.append(iconButton('➕', 'Instrument', () => addDrumTrack(), 'small'));
+      tools.append(iconButton(icon('plus'), 'Instrument', () => addDrumTrack(), 'small'));
     }
     root.append(tools);
 
     const grid = el('div', 'kz-tracks');
     st.drums.forEach((d) => grid.append(renderDrumTrack(d, level)));
-    if (st.melo) grid.append(renderMeloTrack(st.melo, '🎶 Mélodie', level));
-    if (st.bass) grid.append(renderMeloTrack(st.bass, '🎸 Basse', level));
+    if (st.melo) grid.append(renderMeloTrack(st.melo, 'Mélodie', level));
+    if (st.bass) grid.append(renderMeloTrack(st.bass, 'Basse', level));
     root.append(grid);
 
     if (st.djOpen) root.append(renderDjPanel());
@@ -187,14 +188,14 @@ export function createSequencer(ctx) {
     const snd = findSound(d.soundId);
     const head = el('div', 'kz-track-head');
     const pick = el('button', 'kz-track-sound');
-    pick.innerHTML = `<span class="kz-emoji">${snd ? snd.emoji : '🔊'}</span><span>${snd ? snd.label : d.soundId}</span>`;
+    pick.innerHTML = `<span class="kz-emoji">${snd ? icon(snd.emoji) : icon('gain')}</span><span>${snd ? snd.label : d.soundId}</span>`;
     pick.addEventListener('click', () => openSoundLibrary((s) => { d.soundId = s.id; render(); changed(); }, 'drum'));
     head.append(pick);
     if (level === 'expert') {
-      const mute = el('button', 'kz-mini' + (d.muted ? ' on' : ''), d.muted ? '🔇' : '🔊');
+      const mute = el('button', 'kz-mini' + (d.muted ? ' on' : '')); mute.innerHTML = icon(d.muted ? 'mute' : 'gain');
       mute.addEventListener('click', () => { d.muted = !d.muted; render(); changed(); });
       head.append(mute);
-      const del = el('button', 'kz-mini', '🗑️');
+      const del = el('button', 'kz-mini'); del.innerHTML = icon('trash');
       del.addEventListener('click', () => { st.drums = st.drums.filter((x) => x !== d); render(); changed(); });
       head.append(del);
     }
@@ -219,11 +220,11 @@ export function createSequencer(ctx) {
     const head = el('div', 'kz-track-head');
     const snd = findSound(m.soundId);
     const pick = el('button', 'kz-track-sound');
-    pick.innerHTML = `<span class="kz-emoji">${snd ? snd.emoji : '🎹'}</span><span>${title}</span>`;
+    pick.innerHTML = `<span class="kz-emoji">${snd ? icon(snd.emoji) : icon('synth')}</span><span>${title}</span>`;
     pick.addEventListener('click', () => openSoundLibrary((s) => { m.soundId = s.id; render(); changed(); }, 'melo'));
     head.append(pick);
     if (level === 'expert') {
-      const mute = el('button', 'kz-mini' + (m.muted ? ' on' : ''), m.muted ? '🔇' : '🔊');
+      const mute = el('button', 'kz-mini' + (m.muted ? ' on' : '')); mute.innerHTML = icon(m.muted ? 'mute' : 'gain');
       mute.addEventListener('click', () => { m.muted = !m.muted; render(); changed(); });
       head.append(mute);
     }
@@ -258,12 +259,13 @@ export function createSequencer(ctx) {
   function renderFxRow(track) {
     const fx = track.fx;
     const box = el('div', 'kz-fx');
-    box.append(slider('🔊 Volume', track.gain, (v) => { track.gain = v; changed(); }));
-    box.append(slider('🌫️ Filtre', fx.lpf ?? 1, (v) => { fx.lpf = v; changed(); }));
-    box.append(slider('🏔️ Réverb', fx.room ?? 0, (v) => { fx.room = v; changed(); }));
-    box.append(slider('🔁 Écho', fx.delay ?? 0, (v) => { fx.delay = v; changed(); }));
-    box.append(slider('🤖 Crush', fx.crush ?? 0, (v) => { fx.crush = v; changed(); }));
-    box.append(slider('🔥 Disto', fx.distort ?? 0, (v) => { fx.distort = v; changed(); }));
+    const L = (ic, t) => `${icon(ic)} ${t}`;
+    box.append(slider(L('gain', 'Volume'), track.gain, (v) => { track.gain = v; changed(); }));
+    box.append(slider(L('filter', 'Filtre'), fx.lpf ?? 1, (v) => { fx.lpf = v; changed(); }));
+    box.append(slider(L('reverb', 'Réverb'), fx.room ?? 0, (v) => { fx.room = v; changed(); }));
+    box.append(slider(L('echo', 'Écho'), fx.delay ?? 0, (v) => { fx.delay = v; changed(); }));
+    box.append(slider(L('crush', 'Crush'), fx.crush ?? 0, (v) => { fx.crush = v; changed(); }));
+    box.append(slider(L('disto', 'Disto'), fx.distort ?? 0, (v) => { fx.distort = v; changed(); }));
     return box;
   }
 
@@ -306,7 +308,8 @@ export function createSequencer(ctx) {
   function renderDjPanel() {
     const box = el('div', 'kz-song');
     const head = el('div', 'kz-song-head');
-    head.append(el('span', 'kz-song-title', '🎚️ Ultra DJ — triture le son'));
+    const ti = el('span', 'kz-song-title'); ti.innerHTML = `${icon('sliders')} Ultra DJ`;
+    head.append(ti);
     const close = el('button', 'kz-song-toggle on', 'Fermer');
     close.addEventListener('click', () => { st.djOpen = false; render(); });
     head.append(close);
@@ -318,13 +321,15 @@ export function createSequencer(ctx) {
   }
 
   // --- Mode Morceau : panneau + actions ---
-  const KIND = { loop: { e: '🔁', l: 'Loop' }, break: { e: '💥', l: 'Break' }, drop: { e: '🔥', l: 'DROP' } };
+  const KIND = { loop: { e: 'loop', l: 'Loop' }, break: { e: 'burst', l: 'Break' }, drop: { e: 'drop', l: 'DROP' } };
 
   function renderSongPanel() {
     const box = el('div', 'kz-song');
     const head = el('div', 'kz-song-head');
-    head.append(el('span', 'kz-song-title', '🎬 Morceau'));
-    const toggle = el('button', 'kz-song-toggle' + (st.songMode ? ' on' : ''), st.songMode ? '▶︎ Morceau' : '🔁 Boucle');
+    const ti = el('span', 'kz-song-title'); ti.innerHTML = `${icon('song')} Morceau`;
+    head.append(ti);
+    const toggle = el('button', 'kz-song-toggle' + (st.songMode ? ' on' : ''));
+    toggle.innerHTML = st.songMode ? `${icon('song')} Morceau` : `${icon('loop')} Boucle`;
     toggle.addEventListener('click', () => { st.songMode = !st.songMode; render(); changed(); });
     head.append(toggle);
     box.append(head);
@@ -337,7 +342,7 @@ export function createSequencer(ctx) {
       const k = KIND[sc.kind] || KIND.loop;
       const chip = el('div', 'kz-scene k-' + sc.kind + (st.editing === i ? ' editing' : ''));
       const main = el('button', 'kz-scene-main');
-      main.innerHTML = `<b>${i + 1}</b><span>${k.e}</span>`;
+      main.innerHTML = `<b>${i + 1}</b><span>${icon(k.e)}</span>`;
       main.title = k.l + ' — toucher pour éditer';
       main.addEventListener('click', () => loadScene(i));
       chip.append(main);
@@ -345,7 +350,7 @@ export function createSequencer(ctx) {
       bars.title = 'Nombre de mesures';
       bars.addEventListener('click', () => { const seq = [1, 2, 4, 8]; sc.bars = seq[(seq.indexOf(sc.bars) + 1) % seq.length]; render(); changed(); });
       chip.append(bars);
-      const del = el('button', 'kz-scene-del', '✕');
+      const del = el('button', 'kz-scene-del'); del.innerHTML = icon('close');
       del.addEventListener('click', () => { st.scenes.splice(i, 1); if (st.editing === i) st.editing = null; else if (st.editing > i) st.editing--; render(); changed(); });
       chip.append(del);
       list.append(chip);
@@ -353,18 +358,18 @@ export function createSequencer(ctx) {
     box.append(list);
 
     const acts = el('div', 'kz-song-acts');
-    const add = el('button', 'kz-chip', '➕ Ajouter ce loop');
+    const add = el('button', 'kz-chip'); add.innerHTML = `${icon('plus')} Ajouter ce loop`;
     add.addEventListener('click', () => addLoop());
     acts.append(add);
     if (st.editing != null) {
-      const upd = el('button', 'kz-chip', '🔁 Mettre à jour ' + (st.editing + 1));
+      const upd = el('button', 'kz-chip'); upd.innerHTML = `${icon('loop')} Mettre à jour ${st.editing + 1}`;
       upd.addEventListener('click', () => updateScene());
       acts.append(upd);
     }
-    const drop = el('button', 'kz-chip kz-drop', '🔥 Définir le Drop' + (st.dropSnap ? ' ✓' : ''));
+    const drop = el('button', 'kz-chip kz-drop'); drop.innerHTML = `${icon('drop')} Définir le Drop${st.dropSnap ? ' ' + icon('check') : ''}`;
     drop.addEventListener('click', () => defineDrop());
     acts.append(drop);
-    const auto = el('button', 'kz-chip kz-break', '💥 Break auto + reprise');
+    const auto = el('button', 'kz-chip kz-break'); auto.innerHTML = `${icon('burst')} Break auto + reprise`;
     auto.addEventListener('click', () => autoBreakDrop());
     acts.append(auto);
     box.append(acts);

@@ -1,6 +1,7 @@
 // djfx.js — contrôles "Ultra DJ" réutilisables : pad XY de filtre + effets
 // live, et génération de la chaîne d'effets Strudel appliquée à un motif.
 import { el, slider } from './ui.js';
+import { icon } from './icons.js';
 
 const num = (v) => Math.round(v * 1000) / 1000;
 
@@ -74,8 +75,8 @@ export function renderDjControls(container, dj, onChange) {
 
     // Segmenté temps
     const timeRow = el('div', 'dj-seg');
-    [['slow', '🐢 ×½'], ['normal', '▶︎ Normal'], ['fast', '⚡ ×2']].forEach(([v, lbl]) => {
-      const b = el('button', 'dj-seg-btn' + (dj.time === v ? ' on' : ''), lbl);
+    [['slow', 'slow', '×½'], ['normal', 'play', 'Normal'], ['fast', 'fast', '×2']].forEach(([v, ic, lbl]) => {
+      const b = el('button', 'dj-seg-btn' + (dj.time === v ? ' on' : '')); b.innerHTML = `${icon(ic)} ${lbl}`;
       b.addEventListener('click', () => { dj.time = v; build(); onChange(); });
       timeRow.append(b);
     });
@@ -83,10 +84,10 @@ export function renderDjControls(container, dj, onChange) {
 
     // Effets à bascule
     const fxRow = el('div', 'dj-fx-row');
-    const toggle = (key, emoji, label, onVal) => {
+    const toggle = (key, ic, label, onVal) => {
       const active = key === 'chop' ? dj.chop > 0 : dj[key];
       const b = el('button', 'dj-fx-btn' + (active ? ' on' : ''));
-      b.innerHTML = `<span class="kz-emoji">${emoji}</span><span>${label}</span>`;
+      b.innerHTML = `<span class="kz-emoji">${icon(ic)}</span><span>${label}</span>`;
       b.addEventListener('click', () => {
         if (key === 'chop') dj.chop = dj.chop > 0 ? 0 : onVal;
         else dj[key] = !dj[key];
@@ -94,20 +95,20 @@ export function renderDjControls(container, dj, onChange) {
       });
       return b;
     };
-    fxRow.append(toggle('reverse', '🔀', 'Envers'));
-    fxRow.append(toggle('chop', '🔪', 'Hachoir', 8));
-    fxRow.append(toggle('autowah', '🌊', 'Auto-wah'));
+    fxRow.append(toggle('reverse', 'reverse', 'Envers'));
+    fxRow.append(toggle('chop', 'chop', 'Hachoir', 8));
+    fxRow.append(toggle('autowah', 'wah', 'Auto-wah'));
     container.append(fxRow);
 
     // Curseurs
     const knobs = el('div', 'dj-knobs');
-    knobs.append(slider('🏔️ Réverb', dj.room, (v) => { dj.room = v; onChange(); }));
-    knobs.append(slider('🔁 Écho', dj.delay, (v) => { dj.delay = v; onChange(); }));
-    knobs.append(slider('🤖 Crush', dj.crush, (v) => { dj.crush = v; onChange(); }));
+    knobs.append(slider(`${icon('reverb')} Réverb`, dj.room, (v) => { dj.room = v; onChange(); }));
+    knobs.append(slider(`${icon('echo')} Écho`, dj.delay, (v) => { dj.delay = v; onChange(); }));
+    knobs.append(slider(`${icon('crush')} Crush`, dj.crush, (v) => { dj.crush = v; onChange(); }));
     container.append(knobs);
 
     // Reset
-    const reset = el('button', 'kz-chip dj-reset', '↩︎ Effets à zéro');
+    const reset = el('button', 'kz-chip dj-reset'); reset.innerHTML = `${icon('reset')} Effets à zéro`;
     reset.addEventListener('click', () => {
       Object.assign(dj, defaultDjState());
       build(); onChange();

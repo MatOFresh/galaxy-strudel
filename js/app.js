@@ -5,12 +5,13 @@ import { createSequencer } from './modes/sequencer.js';
 import { createPads } from './modes/pads.js';
 import { createBlocks } from './modes/blocks.js';
 import { openVisualizer } from './visualizer.js';
+import { icon } from './icons.js';
 import { toast } from './ui.js';
 
 const MODES = {
-  sequencer: { title: 'Séquenceur', emoji: '🎛️', desc: 'Une grille par instrument + Ultra DJ pour triturer le son.', factory: createSequencer },
-  pads: { title: 'Pads', emoji: '🟪', desc: 'Des pads à lancer comme un Launchpad.', factory: createPads },
-  blocks: { title: 'Blocs', emoji: '🧩', desc: 'Empile des blocs façon Scratch.', factory: createBlocks },
+  sequencer: { title: 'Séquenceur', emoji: 'grid', desc: 'Une grille par instrument + Ultra DJ pour triturer le son.', factory: createSequencer },
+  pads: { title: 'Pads', emoji: 'pads', desc: 'Des pads à lancer comme un Launchpad.', factory: createPads },
+  blocks: { title: 'Blocs', emoji: 'blocks', desc: 'Empile des blocs façon Scratch.', factory: createBlocks },
 };
 
 const app = {
@@ -50,7 +51,7 @@ function updatePlayBtn() {
   const b = $('kz-play');
   if (!b) return;
   b.classList.toggle('playing', app.transport.playing);
-  b.innerHTML = app.transport.playing ? '⏸️' : '▶️';
+  b.innerHTML = app.transport.playing ? icon('pause') : icon('play');
 }
 
 function requestPlay() { if (app.transport.playing) doPlay(); }
@@ -84,7 +85,7 @@ function mountMode(key) {
   };
   app.mode = MODES[key].factory(modeCtx);
   app.mode.init();
-  $('kz-mode-name').textContent = `${MODES[key].emoji} ${MODES[key].title}`;
+  $('kz-mode-name').innerHTML = `<span class="kz-mode-name-ic">${icon(MODES[key].emoji)}</span>${MODES[key].title}`;
   showScreen('studio');
 }
 
@@ -100,7 +101,7 @@ function buildHome() {
   Object.entries(MODES).forEach(([key, m]) => {
     const card = document.createElement('button');
     card.className = 'kz-mode-card';
-    card.innerHTML = `<div class="kz-mode-emoji">${m.emoji}</div><div class="kz-mode-title">${m.title}</div><div class="kz-mode-desc">${m.desc}</div>`;
+    card.innerHTML = `<div class="kz-mode-emoji">${icon(m.emoji)}</div><div class="kz-mode-title">${m.title}</div><div class="kz-mode-desc">${m.desc}</div>`;
     card.addEventListener('click', async () => {
       card.classList.add('loading');
       await ensureStrudel();      // charge les sons (peut prendre qq secondes)
@@ -129,8 +130,16 @@ function init() {
   startVisuals($('kz-galaxy'));
   buildHome();
 
-  // Boutons niveau (présents sur accueil + studio)
+  // Icônes SVG des boutons statiques
+  $('kz-home-btn').innerHTML = icon('home');
+  $('kz-viz-btn').innerHTML = icon('viz');
+  updatePlayBtn();
+
+  // Boutons niveau (présents sur accueil + studio) : robot = simple, cpu = expert
   document.querySelectorAll('[data-level]').forEach((b) => {
+    const big = b.closest('.kz-level-switch.big');
+    const lbl = b.dataset.level === 'simple' ? 'Simple' : 'Expert';
+    b.innerHTML = icon(b.dataset.level === 'simple' ? 'robot' : 'cpu') + (big ? ' <span class="kz-lvl-txt">' + lbl + '</span>' : '');
     b.addEventListener('click', () => setLevel(b.dataset.level));
   });
 

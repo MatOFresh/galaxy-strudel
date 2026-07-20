@@ -1,5 +1,6 @@
 // ui.js — petits composants réutilisés par les modes.
 import { getCategories, importFiles } from './sounds.js';
+import { icon } from './icons.js';
 
 export function el(tag, cls, txt) {
   const e = document.createElement(tag);
@@ -12,7 +13,8 @@ export function el(tag, cls, txt) {
 export function slider(label, value, onInput, opts = {}) {
   const wrap = el('div', 'kz-slider');
   const top = el('div', 'kz-slider-top');
-  top.append(el('span', 'kz-slider-label', label));
+  const lbl = el('span', 'kz-slider-label'); lbl.innerHTML = label; // label peut contenir une icône SVG
+  top.append(lbl);
   const val = el('span', 'kz-slider-val');
   top.append(val);
   const input = el('input');
@@ -43,8 +45,9 @@ export function openSoundLibrary(onPick, filterType = null) {
   const overlay = el('div', 'kz-modal-overlay');
   const modal = el('div', 'kz-modal');
   const header = el('div', 'kz-modal-head');
-  header.append(el('h2', null, '🎵 Bibliothèque de sons'));
-  const close = el('button', 'kz-close', '✕');
+  const h2 = el('h2'); h2.innerHTML = `<span class="kz-h2-ic">${icon('sliders')}</span>Bibliothèque de sons`;
+  header.append(h2);
+  const close = el('button', 'kz-close'); close.innerHTML = icon('close');
   close.addEventListener('click', () => overlay.remove());
   header.append(close);
   modal.append(header);
@@ -52,17 +55,18 @@ export function openSoundLibrary(onPick, filterType = null) {
   // Import
   const importBar = el('div', 'kz-import-bar');
   const importBtn = el('label', 'kz-import-btn');
-  importBtn.innerHTML = '➕ Importer mes sons';
+  importBtn.innerHTML = icon('plus') + ' Importer mes sons';
   const fileInput = el('input');
   fileInput.type = 'file';
   fileInput.accept = 'audio/*';
   fileInput.multiple = true;
   fileInput.style.display = 'none';
   fileInput.addEventListener('change', async () => {
-    importBtn.innerHTML = '⏳ Import...';
+    importBtn.textContent = 'Import…';
     await importFiles(fileInput.files);
     renderCats();
-    importBtn.innerHTML = '➕ Importer mes sons';
+    importBtn.innerHTML = icon('plus') + ' Importer mes sons';
+    importBtn.append(fileInput); // ré-attache l'input (innerHTML l'a retiré)
   });
   importBtn.append(fileInput);
   importBar.append(importBtn);
@@ -81,7 +85,7 @@ export function openSoundLibrary(onPick, filterType = null) {
       body.append(el('h3', 'kz-cat-title', cat));
       const grid = el('div', 'kz-sound-grid');
       list.forEach((s) => {
-        const b = iconButton(s.emoji, s.label, () => {
+        const b = iconButton(icon(s.emoji), s.label, () => {
           onPick(s);
           overlay.remove();
         });

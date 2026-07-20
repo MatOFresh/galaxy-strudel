@@ -282,6 +282,39 @@ button { font-family: inherit; cursor: pointer; color: var(--txt); }
 }
 .viz-scene:active, .viz-close:active { transform: scale(.94); }
 
+/* ---------- ICÔNES SVG (monochrome, hérite de currentColor) ---------- */
+.ic { width: 1.1em; height: 1.1em; display: inline-block; vertical-align: -0.15em; flex: none; }
+.kz-emoji, .kz-pad-emoji, .kz-mode-emoji { display: inline-flex; align-items: center; justify-content: center; }
+.kz-mode-emoji { color: var(--ice); }
+.kz-mode-emoji .ic { width: 2.7rem; height: 2.7rem; }
+.kz-pad-emoji { color: var(--pad-color, var(--ice)); }
+.kz-pad-emoji .ic { width: 2rem; height: 2rem; }
+.kz-emoji .ic { width: 1.4rem; height: 1.4rem; }
+.kz-icon-btn .kz-emoji .ic { width: 1.7rem; height: 1.7rem; }
+/* Boutons carrés : icône centrée */
+.kz-mini, .kz-top-btn, .kz-play, .kz-close, .viz-close, .kz-scene-del, .kz-lane-del,
+.kz-block-add, .kz-song-toggle, .kz-song-title, .kz-chip, .dj-seg-btn, .kz-slider-label,
+.kz-inline-label, .kz-h2-ic, .kz-mode-name-ic { display: inline-flex; align-items: center; justify-content: center; gap: .4em; }
+.kz-slider-label { justify-content: flex-start; }
+.kz-play .ic { width: 1.7rem; height: 1.7rem; }
+.kz-top-btn .ic { width: 1.35rem; height: 1.35rem; }
+.kz-mini .ic { width: 1.2rem; height: 1.2rem; }
+.kz-h2-ic .ic { width: 1.3rem; height: 1.3rem; color: var(--ice); }
+.kz-mode-name-ic { color: var(--ice); }
+.kz-scene-main span .ic { width: 1.05rem; height: 1.05rem; }
+.kz-block-x .ic { width: .85rem; height: .85rem; }
+.kz-lvl-txt { font-family: -apple-system, system-ui, sans-serif; }
+
+/* ---------- POLICE CONSOLE (mono partout) + re-polish Apple ---------- */
+body { font-family: var(--mono); letter-spacing: .005em; }
+.kz-tagline, .kz-mode-desc, .kz-import-hint, .kz-pads-hint, .kz-song-empty, .kz-loadhint, .note { letter-spacing: 0; }
+.kz-mode-title, .kz-mode-name, .kz-song-title, .kz-cat-title, .kz-choose { letter-spacing: .01em; }
+/* Feuille modale : glisse du bas (Apple : critically damped, sans rebond) */
+@keyframes sheet-up { from { transform: translateY(26px); opacity: .3; } to { transform: none; opacity: 1; } }
+.kz-modal-overlay { animation: viz-in .22s ease both; }
+.kz-modal { animation: sheet-up .40s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { .kz-modal, .kz-modal-overlay { animation: none !important; } }
+
 /* ---------- POLISH STYLE APPLE ---------- */
 /* Typo : tracking négatif sur les grands titres, matériaux translucides,
    feedback au toucher instantané, springs légers. */

@@ -7,50 +7,51 @@ import { registerSamples } from './strudel-engine.js';
 
 // type 'drum'   -> son percussif, on/off par pas
 // type 'melo'   -> jouable en notes (synthés ou samples pitchables)
+// `emoji` porte désormais un NOM D'ICÔNE (cf. icons.js), rendu en SVG monochrome.
 export const LIBRARY = {
   Batterie: [
-    { id: 'bd', name: 'bd', label: 'Grosse caisse', emoji: '🥁', type: 'drum' },
-    { id: 'sd', name: 'sd', label: 'Caisse claire', emoji: '🪘', type: 'drum' },
-    { id: 'hh', name: 'hh', label: 'Charleston', emoji: '🎩', type: 'drum' },
-    { id: 'oh', name: '808oh', label: 'Charleston ouvert', emoji: '👐', type: 'drum' },
-    { id: 'cp', name: 'cp', label: 'Clap', emoji: '👏', type: 'drum' },
-    { id: 'rim', name: 'rs', label: 'Rimshot', emoji: '📏', type: 'drum' },
-    { id: 'lt', name: 'lt', label: 'Tom grave', emoji: '🛢️', type: 'drum' },
-    { id: 'mt', name: 'mt', label: 'Tom médium', emoji: '🥫', type: 'drum' },
-    { id: 'ht', name: 'ht', label: 'Tom aigu', emoji: '🔔', type: 'drum' },
-    { id: 'cr', name: 'cr', label: 'Crash', emoji: '💥', type: 'drum' },
-    { id: 'rd', name: 'crate_rd', label: 'Ride', emoji: '🛎️', type: 'drum' },
+    { id: 'bd', name: 'bd', label: 'Grosse caisse', emoji: 'kick', type: 'drum' },
+    { id: 'sd', name: 'sd', label: 'Caisse claire', emoji: 'snare', type: 'drum' },
+    { id: 'hh', name: 'hh', label: 'Charleston', emoji: 'hat', type: 'drum' },
+    { id: 'oh', name: '808oh', label: 'Charleston ouvert', emoji: 'hat', type: 'drum' },
+    { id: 'cp', name: 'cp', label: 'Clap', emoji: 'clap', type: 'drum' },
+    { id: 'rim', name: 'rs', label: 'Rimshot', emoji: 'snare', type: 'drum' },
+    { id: 'lt', name: 'lt', label: 'Tom grave', emoji: 'tom', type: 'drum' },
+    { id: 'mt', name: 'mt', label: 'Tom médium', emoji: 'tom', type: 'drum' },
+    { id: 'ht', name: 'ht', label: 'Tom aigu', emoji: 'tom', type: 'drum' },
+    { id: 'cr', name: 'cr', label: 'Crash', emoji: 'cymbal', type: 'drum' },
+    { id: 'rd', name: 'crate_rd', label: 'Ride', emoji: 'cymbal', type: 'drum' },
   ],
   Percussions: [
-    { id: 'perc', name: 'perc', label: 'Perc', emoji: '🎯', type: 'drum' },
-    { id: 'cb', name: 'cb', label: 'Cowbell', emoji: '🐄', type: 'drum' },
-    { id: 'tabla', name: 'tabla', label: 'Tabla', emoji: '🪘', type: 'drum' },
-    { id: 'east', name: 'east', label: 'Perc Est', emoji: '🌏', type: 'drum' },
-    { id: 'click', name: 'click', label: 'Click', emoji: '🖱️', type: 'drum' },
-    { id: 'metal', name: 'metal', label: 'Métal', emoji: '⚙️', type: 'drum' },
-    { id: 'insect', name: 'insect', label: 'Insecte', emoji: '🦗', type: 'drum' },
-    { id: 'space', name: 'space', label: 'Espace', emoji: '🛸', type: 'drum' },
+    { id: 'perc', name: 'perc', label: 'Perc', emoji: 'perc', type: 'drum' },
+    { id: 'cb', name: 'cb', label: 'Cowbell', emoji: 'cowbell', type: 'drum' },
+    { id: 'tabla', name: 'tabla', label: 'Tabla', emoji: 'perc', type: 'drum' },
+    { id: 'east', name: 'east', label: 'Perc Est', emoji: 'perc', type: 'drum' },
+    { id: 'click', name: 'click', label: 'Click', emoji: 'perc', type: 'drum' },
+    { id: 'metal', name: 'metal', label: 'Métal', emoji: 'cymbal', type: 'drum' },
+    { id: 'insect', name: 'insect', label: 'Insecte', emoji: 'noise', type: 'drum' },
+    { id: 'space', name: 'space', label: 'Espace', emoji: 'star', type: 'drum' },
   ],
   Basses: [
-    { id: 'jvbass', name: 'jvbass', label: 'Basse JV', emoji: '🎸', type: 'melo' },
-    { id: 'bass', name: 'bass', label: 'Basse', emoji: '🔊', type: 'melo' },
-    { id: 'sawtooth', name: 'sawtooth', label: 'Basse Saw', emoji: '📐', type: 'melo' },
-    { id: 'square', name: 'square', label: 'Basse Carré', emoji: '🟦', type: 'melo' },
+    { id: 'jvbass', name: 'jvbass', label: 'Basse JV', emoji: 'bass', type: 'melo' },
+    { id: 'bass', name: 'bass', label: 'Basse', emoji: 'bass', type: 'melo' },
+    { id: 'sawtooth', name: 'sawtooth', label: 'Basse Saw', emoji: 'synth', type: 'melo' },
+    { id: 'square', name: 'square', label: 'Basse Carré', emoji: 'synth', type: 'melo' },
   ],
   Synthés: [
-    { id: 'sine', name: 'sine', label: 'Sinus doux', emoji: '〰️', type: 'melo' },
-    { id: 'triangle', name: 'triangle', label: 'Triangle', emoji: '🔺', type: 'melo' },
-    { id: 'sawtooth2', name: 'sawtooth', label: 'Saw brillant', emoji: '⚡', type: 'melo' },
-    { id: 'square2', name: 'square', label: 'Carré rétro', emoji: '👾', type: 'melo' },
-    { id: 'arpy', name: 'arpy', label: 'Arpy', emoji: '🎹', type: 'melo' },
-    { id: 'piano', name: 'juno', label: 'Piano', emoji: '🎼', type: 'melo' },
+    { id: 'sine', name: 'sine', label: 'Sinus doux', emoji: 'synth', type: 'melo' },
+    { id: 'triangle', name: 'triangle', label: 'Triangle', emoji: 'synth', type: 'melo' },
+    { id: 'sawtooth2', name: 'sawtooth', label: 'Saw brillant', emoji: 'synth', type: 'melo' },
+    { id: 'square2', name: 'square', label: 'Carré rétro', emoji: 'synth', type: 'melo' },
+    { id: 'arpy', name: 'arpy', label: 'Arpy', emoji: 'synth', type: 'melo' },
+    { id: 'piano', name: 'juno', label: 'Piano', emoji: 'synth', type: 'melo' },
   ],
   Ambiances: [
-    { id: 'casio', name: 'casio', label: 'Casio', emoji: '🎛️', type: 'melo' },
-    { id: 'jazz', name: 'jazz', label: 'Jazz', emoji: '🎷', type: 'melo' },
-    { id: 'metal2', name: 'metal', label: 'Cloche métal', emoji: '🔩', type: 'melo' },
-    { id: 'numbers', name: 'numbers', label: 'Voix chiffres', emoji: '🔢', type: 'drum' },
-    { id: 'birds', name: 'birds', label: 'Oiseaux', emoji: '🐦', type: 'drum' },
+    { id: 'casio', name: 'casio', label: 'Casio', emoji: 'synth', type: 'melo' },
+    { id: 'jazz', name: 'jazz', label: 'Jazz', emoji: 'synth', type: 'melo' },
+    { id: 'metal2', name: 'metal', label: 'Cloche métal', emoji: 'cymbal', type: 'melo' },
+    { id: 'numbers', name: 'numbers', label: 'Voix chiffres', emoji: 'voice', type: 'drum' },
+    { id: 'birds', name: 'birds', label: 'Oiseaux', emoji: 'star', type: 'drum' },
   ],
 };
 
@@ -83,7 +84,7 @@ export async function importFiles(fileList) {
     let i = 1;
     while (findSound(id) || entries[id]) { id = base + i; i++; }
     entries[id] = [url];
-    const item = { id, name: id, label: file.name.replace(/\.[^.]+$/, ''), emoji: '🌟', type: 'drum', imported: true };
+    const item = { id, name: id, label: file.name.replace(/\.[^.]+$/, ''), emoji: 'star', type: 'drum', imported: true };
     imported.push(item);
     added.push(item);
   }
