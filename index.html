@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Studio Galaxie 🚀 — fais ta musique</title>
+  <meta name="theme-color" content="#0a0525" />
+  <meta name="description" content="Fabrique de la musique spatiale avec des boutons, sans coder. Propulsé par Strudel." />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./css/styles.css" />
+  <!-- Moteur audio Strudel (UMD -> fonctions globales) -->
+  <script src="https://unpkg.com/@strudel/web@1.3.0"></script>
+</head>
+<body>
+  <canvas id="kz-galaxy" class="kz-galaxy"></canvas>
+
+  <!-- ÉCRAN D'ACCUEIL : choix du mode + niveau -->
+  <section id="kz-home" class="kz-home">
+    <header class="kz-home-head">
+      <h1 class="kz-logo">🚀 Studio Galaxie</h1>
+      <p class="kz-tagline">Fais un morceau méga cool. Zéro code, que des boutons.</p>
+    </header>
+
+    <div class="kz-level-switch big">
+      <span class="kz-level-title">Niveau :</span>
+      <button data-level="simple" class="kz-level-btn">😀 Simple</button>
+      <button data-level="expert" class="kz-level-btn">🧠 Expert</button>
+    </div>
+
+    <p class="kz-choose">Choisis ta façon de jouer :</p>
+    <div id="kz-mode-cards" class="kz-mode-cards"></div>
+
+    <p class="kz-loadhint">La 1ʳᵉ fois, les sons se chargent en quelques secondes ⏳</p>
+  </section>
+
+  <!-- STUDIO : le mode choisi -->
+  <section id="kz-studio" class="kz-studio hidden">
+    <header class="kz-topbar">
+      <button id="kz-home-btn" class="kz-top-btn" title="Retour">🏠</button>
+      <span id="kz-mode-name" class="kz-mode-name">🎛️ Séquenceur</span>
+      <div class="kz-level-switch">
+        <button data-level="simple" class="kz-level-btn">😀</button>
+        <button data-level="expert" class="kz-level-btn">🧠</button>
+      </div>
+    </header>
+
+    <div id="kz-mode-root" class="kz-mode-root"></div>
+
+    <footer class="kz-transport">
+      <button id="kz-play" class="kz-play">▶️</button>
+      <div class="kz-tempo-wrap">
+        <input id="kz-tempo" type="range" min="70" max="180" value="110" />
+        <span id="kz-tempo-val" class="kz-tempo-val">110 BPM</span>
+      </div>
+    </footer>
+  </section>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

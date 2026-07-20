@@ -1,0 +1,10 @@
+# OS / éditeurs
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# rien à builder : app statique. Pas de node_modules ici.
+node_modules/
+*.log
