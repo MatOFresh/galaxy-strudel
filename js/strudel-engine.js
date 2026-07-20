@@ -7,6 +7,7 @@ const state = {
   ready: false,
   playing: false,
   lastCode: '',
+  repl: null,   // instance repl renvoyée par initStrudel — SEUL stop fiable
   analyser: null,
   freqData: null,
   timeData: null,
@@ -53,7 +54,10 @@ export async function ensureStrudel() {
     if (typeof window.initStrudel !== 'function') {
       throw new Error('Strudel (@strudel/web) non chargé');
     }
-    await window.initStrudel({
+    // initStrudel renvoie le repl (via son initDone) — on le garde pour
+    // pouvoir l'arrêter de façon fiable (window.hush est écrasé par un autre
+    // module et n'arrête PAS le scheduler).
+    const repl = await window.initStrudel({
       // Précharge de grosses banques de samples => beaucoup de sons dispo.
       prebake: async () => {
         const s = window.samples;
@@ -65,6 +69,7 @@ export async function ensureStrudel() {
         await Promise.allSettled(banks.map((b) => s(b)));
       },
     });
+    state.repl = repl;
     installAudioTap();
     state.ready = true;
   })();
@@ -96,7 +101,13 @@ export async function play(code) {
 }
 
 export function stop() {
-  if (window.hush) window.hush();
+  // repl.stop() est le SEUL arrêt fiable (cf. bug : window.hush n'arrête rien).
+  try {
+    if (state.repl && typeof state.repl.stop === 'function') state.repl.stop();
+    else if (window.hush) window.hush();
+  } catch (e) {
+    try { if (window.hush) window.hush(); } catch (_) { /* noop */ }
+  }
   state.playing = false;
 }
 

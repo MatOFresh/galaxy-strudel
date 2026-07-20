@@ -200,6 +200,78 @@ button { font-family: inherit; cursor: pointer; color: var(--txt); }
 .kz-chip.kz-drop { border-color: var(--magenta); background: rgba(255,78,205,.15); }
 .kz-chip.kz-break { border-color: var(--gold); background: rgba(255,209,102,.15); }
 
+/* ---------- ULTRA DJ ---------- */
+.dj-padwrap { margin: 8px 0 14px; }
+.dj-pad-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; font-weight: 800; letter-spacing: .04em; }
+.dj-pad-axes { color: var(--txt-dim); font-size: .68rem; font-weight: 600; letter-spacing: 0; }
+.dj-pad {
+  position: relative; width: 100%; aspect-ratio: 1 / 0.72; border-radius: 22px;
+  background:
+    radial-gradient(120% 120% at 0% 100%, rgba(56,249,215,.20), transparent 55%),
+    radial-gradient(120% 120% at 100% 0%, rgba(255,78,205,.20), transparent 55%),
+    rgba(12,7,30,.55);
+  border: 1.5px solid var(--panel-b);
+  backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 10px 30px rgba(0,0,0,.35);
+  touch-action: none; overflow: hidden;
+}
+.dj-pad::before { /* grille subtile */
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+  background-size: 25% 25%, 25% 25%;
+}
+.dj-pad.on { border-color: var(--cyan); box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 0 26px rgba(56,249,215,.35); }
+.dj-dot {
+  position: absolute; width: 42px; height: 42px; border-radius: 50%; transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 35% 30%, #fff, var(--cyan) 60%, rgba(56,249,215,.2));
+  box-shadow: 0 0 22px rgba(56,249,215,.85), 0 2px 8px rgba(0,0,0,.4);
+  pointer-events: none; will-change: left, top;
+}
+.dj-seg { display: flex; gap: 6px; background: rgba(255,255,255,.05); border: 1.5px solid var(--panel-b); border-radius: 14px; padding: 5px; margin-bottom: 12px; }
+.dj-seg-btn { flex: 1; border: none; background: transparent; color: var(--txt-dim); font-weight: 800; padding: 10px; border-radius: 10px; font-size: .9rem; }
+.dj-seg-btn.on { background: linear-gradient(135deg, var(--violet), var(--magenta)); color: #fff; box-shadow: 0 0 16px rgba(255,78,205,.5); }
+.dj-fx-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.dj-fx-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px;
+  border: 1.5px solid var(--panel-b); background: var(--panel); border-radius: 14px; color: var(--txt);
+  font-weight: 700; font-size: .78rem;
+}
+.dj-fx-btn .kz-emoji { font-size: 1.5rem; }
+.dj-fx-btn.on { border-color: var(--cyan); background: rgba(56,249,215,.16); box-shadow: 0 0 16px rgba(56,249,215,.35); }
+.dj-knobs { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 14px; }
+.dj-reset { width: 100%; text-align: center; }
+
+/* ---------- POLISH STYLE APPLE ---------- */
+/* Typo : tracking négatif sur les grands titres, matériaux translucides,
+   feedback au toucher instantané, springs légers. */
+.kz-logo { letter-spacing: -0.02em; line-height: .95; text-wrap: balance; }
+.kz-topbar, .kz-transport { -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); }
+.kz-topbar { border-bottom: 1px solid rgba(255,255,255,.08); box-shadow: 0 1px 0 rgba(255,255,255,.06) inset; }
+.kz-transport { border-top: 1px solid rgba(255,255,255,.10); }
+/* Feedback au pointer-down, réponse rapide (§1 Response, §4 springs) */
+.kz-mode-card, .kz-pad, .kz-cell, .kz-chip, .kz-icon-btn, .kz-track-sound,
+.dj-fx-btn, .dj-seg-btn, .kz-play, .kz-top-btn, .kz-block, .kz-scene-main {
+  transition: transform .12s cubic-bezier(.2,.7,.2,1), box-shadow .18s ease, background .18s ease;
+}
+.kz-mode-card:active, .kz-pad:active, .kz-chip:active, .kz-icon-btn:active,
+.kz-track-sound:active, .dj-fx-btn:active, .dj-seg-btn:active, .kz-top-btn:active,
+.kz-block:active, .kz-scene-main:active { transform: scale(.96); }
+.kz-play:active { transform: scale(.9); }
+/* Materialize : les cartes montent doucement à l'apparition */
+@keyframes dj-rise { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: none; } }
+.kz-mode-root > * { animation: dj-rise .32s cubic-bezier(.2,.7,.2,1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kz-mode-root > *, .kz-galaxy { animation: none !important; }
+  * { transition-duration: .01ms !important; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .kz-topbar, .kz-transport, .kz-track, .kz-song, .kz-pad, .dj-pad, .kz-modal {
+    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+    background: #120a2e !important;
+  }
+}
+
 /* ---------- SLIDERS ---------- */
 .kz-slider { display: flex; flex-direction: column; gap: 4px; }
 .kz-slider-top { display: flex; justify-content: space-between; font-size: .78rem; font-weight: 700; }

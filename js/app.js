@@ -4,12 +4,14 @@ import { ensureStrudel, play, stop, isPlaying } from './strudel-engine.js';
 import { createSequencer } from './modes/sequencer.js';
 import { createPads } from './modes/pads.js';
 import { createBlocks } from './modes/blocks.js';
+import { createUltraDJ } from './modes/ultradj.js';
 import { toast } from './ui.js';
 
 const MODES = {
   sequencer: { title: 'Séquenceur', emoji: '🎛️', desc: 'Une grille par instrument. Allume les cases !', factory: createSequencer },
   pads: { title: 'Pads', emoji: '🟪', desc: 'Des pads à lancer comme un Launchpad.', factory: createPads },
   blocks: { title: 'Blocs', emoji: '🧩', desc: 'Empile des blocs façon Scratch.', factory: createBlocks },
+  ultradj: { title: 'Ultra DJ', emoji: '🎚️', desc: 'Triture le son de ton morceau en live.', factory: createUltraDJ },
 };
 
 const app = {
@@ -17,6 +19,7 @@ const app = {
   bpm: 110,
   modeKey: null,
   mode: null,
+  sessionCode: null, // dernier morceau joué (hors DJ) — base pour l'Ultra DJ
   transport: { playing: false, startTime: 0, cps: 110 / 240 },
 };
 
@@ -30,14 +33,15 @@ function getAudioTime() {
 async function doPlay() {
   if (!app.mode) return;
   const code = app.mode.buildCode();
-  const res = await play(code);
-  if (!res.ok) { toast('Oups, réessaie 🎧'); return; }
-  if (!app.transport.playing) {
-    app.transport.startTime = getAudioTime();
-  }
-  app.transport.playing = true;
-  app.transport.cps = app.bpm / 240;
+  // Mémorise le morceau (hors DJ) pour que l'Ultra DJ puisse le triturer.
+  if (app.modeKey !== 'ultradj') app.sessionCode = code;
+  const wasPlaying = app.transport.playing;
+  app.transport.playing = true;     // état synchrone -> le bouton pause ne rate jamais
   updatePlayBtn();
+  const res = await play(code);
+  if (!res.ok) { app.transport.playing = wasPlaying; updatePlayBtn(); toast('Oups, réessaie 🎧'); return; }
+  if (!wasPlaying) app.transport.startTime = getAudioTime();
+  app.transport.cps = app.bpm / 240;
 }
 
 function doStop() {
@@ -68,9 +72,9 @@ function tickLoop() {
 }
 
 // ---- Montage d'un mode ----
+// On NE coupe PAS le son : le morceau continue quand on change de mode.
 function mountMode(key) {
   if (app.mode && app.mode.destroy) app.mode.destroy();
-  doStop();
   app.modeKey = key;
   const container = $('kz-mode-root');
   container.innerHTML = '';
@@ -78,6 +82,8 @@ function mountMode(key) {
     root: container,
     getLevel: () => app.level,
     getBpm: () => app.bpm,
+    getSession: () => app.sessionCode,
+    isPlaying: () => app.transport.playing,
     requestPlay,
     registerBuildCode: () => {},
   };
@@ -134,7 +140,8 @@ function init() {
   });
 
   $('kz-play').addEventListener('click', () => (app.transport.playing ? doStop() : doPlay()));
-  $('kz-home-btn').addEventListener('click', () => { doStop(); showScreen('home'); });
+  // Retour à l'accueil : le morceau continue de jouer (on ne coupe pas).
+  $('kz-home-btn').addEventListener('click', () => { showScreen('home'); });
 
   const tempo = $('kz-tempo');
   tempo.addEventListener('input', () => {
