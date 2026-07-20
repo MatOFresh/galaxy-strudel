@@ -1,6 +1,9 @@
-// Service worker minimal : met en cache la coque de l'app pour l'offline.
+// Service worker : coque en cache pour l'offline, avec mise à jour automatique.
+// Stratégie "stale-while-revalidate" : on sert vite depuis le cache, et on
+// rafraîchit le cache en tâche de fond -> les correctifs poussés arrivent au
+// lancement suivant sans vider le cache à la main.
 // Les samples Strudel viennent du réseau (CDN) au 1er lancement.
-const CACHE = 'galaxie-v1';
+const CACHE = 'galaxie-v2';
 const SHELL = [
   './',
   './index.html',
@@ -31,11 +34,18 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   // Ne pas intercepter le CDN Strudel / samples (réseau direct).
   if (url.origin !== self.location.origin) return;
+  if (e.request.method !== 'GET') return;
   e.respondWith(
-    caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {
-      const copy = res.clone();
-      caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
-      return res;
-    }).catch(() => caches.match('./index.html')))
+    caches.open(CACHE).then((cache) =>
+      cache.match(e.request).then((hit) => {
+        // Rafraîchit le cache en tâche de fond (revalidate).
+        const fetching = fetch(e.request).then((res) => {
+          if (res && res.ok) cache.put(e.request, res.clone());
+          return res;
+        }).catch(() => hit || cache.match('./index.html'));
+        // Sert le cache tout de suite si dispo, sinon attend le réseau.
+        return hit || fetching;
+      })
+    )
   );
 });
