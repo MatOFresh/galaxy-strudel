@@ -44,6 +44,42 @@ export function iconButton(emoji, label, onClick, cls = '') {
 export function openSoundLibrary(onPick, filterType = null) {
   const overlay = el('div', 'kz-modal-overlay');
   const modal = el('div', 'kz-modal');
+
+  // Poignée iOS + glisser-pour-fermer (pointer events, rubber-band, vélocité).
+  const grab = el('div', 'kz-grab');
+  modal.append(grab);
+  let dragging = false, startY = 0, curY = 0, lastY = 0, lastT = 0, vel = 0;
+  grab.style.touchAction = 'none';
+  grab.addEventListener('pointerdown', (e) => {
+    dragging = true; startY = e.clientY; curY = 0; lastY = e.clientY; lastT = performance.now(); vel = 0;
+    modal.style.transition = 'none';
+    try { grab.setPointerCapture(e.pointerId); } catch (_) { /* noop */ }
+  });
+  grab.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    let dy = e.clientY - startY;
+    if (dy < 0) dy = dy * 0.28;            // rubber-band vers le haut
+    curY = dy;
+    modal.style.transform = `translateY(${dy}px)`;
+    const now = performance.now(), dt = now - lastT;
+    if (dt > 0) vel = ((e.clientY - lastY) / dt) * 1000;
+    lastY = e.clientY; lastT = now;
+  });
+  const dragEnd = () => {
+    if (!dragging) return; dragging = false;
+    modal.style.transition = 'transform .38s cubic-bezier(.2,.85,.25,1)';
+    const projected = curY + vel * 0.12;   // projection de momentum
+    if (projected > modal.offsetHeight * 0.3 || vel > 750) {
+      modal.style.transform = `translateY(${modal.offsetHeight + 80}px)`;
+      overlay.style.opacity = '0';
+      setTimeout(() => overlay.remove(), 320);
+    } else {
+      modal.style.transform = 'translateY(0)';
+    }
+  };
+  grab.addEventListener('pointerup', dragEnd);
+  grab.addEventListener('pointercancel', dragEnd);
+
   const header = el('div', 'kz-modal-head');
   const h2 = el('h2'); h2.innerHTML = `<span class="kz-h2-ic">${icon('sliders')}</span>Bibliothèque de sons`;
   header.append(h2);

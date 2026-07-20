@@ -315,6 +315,30 @@ body { font-family: var(--mono); letter-spacing: .005em; }
 .kz-modal { animation: sheet-up .40s cubic-bezier(.2,.8,.2,1) both; }
 @media (prefers-reduced-motion: reduce) { .kz-modal, .kz-modal-overlay { animation: none !important; } }
 
+/* ---------- OverApple : poignée, ressort, kaléidoscope ---------- */
+.kz-modal-overlay { transition: opacity .3s ease; }
+.kz-grab { width: 42px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.28); margin: 2px auto 12px; flex: none; cursor: grab; }
+.kz-grab:active { cursor: grabbing; }
+/* Fondu de bord haut du contenu scrollable (scroll edge effect Apple) */
+.kz-modal-body { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px); mask-image: linear-gradient(to bottom, transparent 0, #000 14px); }
+/* Ressort de relâche sur les gros éléments tactiles (retour légèrement rebondi) */
+.kz-mode-card, .kz-pad, .kz-play, .kz-scene, .dj-fx-btn, .kz-chip {
+  transition: transform .34s cubic-bezier(.34,1.42,.5,1), box-shadow .18s ease, background .18s ease;
+}
+.kz-mode-card:active, .kz-pad:active, .dj-fx-btn:active, .kz-chip:active { transform: scale(.95); transition: transform .09s ease-out; }
+.kz-play:active { transform: scale(.9); transition: transform .09s ease-out; }
+:focus-visible { outline: 2px solid var(--ice); outline-offset: 2px; }
+
+/* Bouton kaléidoscope : très visible + mandala qui tourne */
+.kz-viz-launch {
+  color: #05121a; border: none;
+  background: conic-gradient(from 0deg, var(--ice), var(--amber), var(--steel), var(--ice));
+  box-shadow: 0 0 18px rgba(87,209,255,.55), inset 0 0 8px rgba(0,0,0,.25);
+}
+.kz-viz-launch .ic { animation: kaleido-spin 8s linear infinite; transform-origin: 50% 50%; }
+@keyframes kaleido-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .kz-viz-launch .ic { animation: none; } }
+
 /* ---------- POLISH STYLE APPLE ---------- */
 /* Typo : tracking négatif sur les grands titres, matériaux translucides,
    feedback au toucher instantané, springs légers. */

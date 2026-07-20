@@ -142,7 +142,7 @@ export function createSequencer(ctx) {
     const tools = el('div', 'kz-seq-tools');
     tools.append(iconButton(icon('dice'), 'Surprise', () => { randomize(); toast('Nouveau motif !'); }, 'small'));
     tools.append(iconButton(icon('eraser'), 'Effacer', () => { clearAll(); }, 'small'));
-    tools.append(iconButton(icon('sliders'), 'Ultra DJ', () => { st.djOpen = !st.djOpen; render(); }, 'small' + ((st.djOpen || djIsActive(st.dj)) ? ' active' : '')));
+    tools.append(iconButton(icon('sliders'), 'Ultra DJ', () => { const wasOpen = st.djOpen; st.djOpen = !st.djOpen; render(); if (!wasOpen) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 'small' + ((st.djOpen || djIsActive(st.dj)) ? ' active' : '')));
     if (level === 'expert') {
       // sélecteur de gamme
       const scaleSel = el('select', 'kz-select');
@@ -165,9 +165,10 @@ export function createSequencer(ctx) {
     st.drums.forEach((d) => grid.append(renderDrumTrack(d, level)));
     if (st.melo) grid.append(renderMeloTrack(st.melo, 'Mélodie', level));
     if (st.bass) grid.append(renderMeloTrack(st.bass, 'Basse', level));
-    root.append(grid);
 
+    // Ultra DJ s'ouvre EN HAUT (juste sous les outils), pas en bas.
     if (st.djOpen) root.append(renderDjPanel());
+    root.append(grid);
     root.append(renderSongPanel());
 
     if (level === 'simple') {

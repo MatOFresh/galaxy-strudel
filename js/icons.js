@@ -30,6 +30,8 @@ const I = {
   scale: S('<path d="M9 18V6l10-2v11"/><circle cx="7" cy="18" r="2" fill="currentColor" stroke="none"/><circle cx="17" cy="15" r="2" fill="currentColor" stroke="none"/>'),
   steps: S('<path d="M5 20V9M10 20V4M15 20V12M20 20V7"/>'),
   viz: S('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5.2 5.2l2 2M16.8 16.8l2 2M18.8 5.2l-2 2M7.2 16.8l-2 2"/>'),
+  // Kaléidoscope : deux triangles (hexagramme) + cercle + centre = mandala.
+  kaleido: S('<circle cx="12" cy="12" r="9.2"/><path d="M12 3.2l7.6 13.2H4.4z"/><path d="M12 20.8L4.4 7.6h15.2z"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/>'),
   // --- morceau ---
   song: S('<rect x="3" y="8" width="18" height="12" rx="2"/><path d="M3 8l3-4h12l3 4M8.5 4L6.5 8M13.5 4l-2 4"/>'),
   loop: S('<path d="M5 9a5 5 0 015-5h5M19 15a5 5 0 01-5 5H9"/><path d="M15 1l3 3-3 3M9 23l-3-3 3-3"/>'),

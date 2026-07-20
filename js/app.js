@@ -3,7 +3,6 @@ import { startVisuals } from './visuals.js';
 import { ensureStrudel, play, stop, isPlaying } from './strudel-engine.js';
 import { createSequencer } from './modes/sequencer.js';
 import { createPads } from './modes/pads.js';
-import { createBlocks } from './modes/blocks.js';
 import { openVisualizer } from './visualizer.js';
 import { icon } from './icons.js';
 import { toast } from './ui.js';
@@ -11,7 +10,6 @@ import { toast } from './ui.js';
 const MODES = {
   sequencer: { title: 'Séquenceur', emoji: 'grid', desc: 'Une grille par instrument + Ultra DJ pour triturer le son.', factory: createSequencer },
   pads: { title: 'Pads', emoji: 'pads', desc: 'Des pads à lancer comme un Launchpad.', factory: createPads },
-  blocks: { title: 'Blocs', emoji: 'blocks', desc: 'Empile des blocs façon Scratch.', factory: createBlocks },
 };
 
 const app = {
@@ -132,7 +130,7 @@ function init() {
 
   // Icônes SVG des boutons statiques
   $('kz-home-btn').innerHTML = icon('home');
-  $('kz-viz-btn').innerHTML = icon('viz');
+  $('kz-viz-btn').innerHTML = icon('kaleido');
   updatePlayBtn();
 
   // Boutons niveau (présents sur accueil + studio) : robot = simple, cpu = expert
