@@ -1,6 +1,6 @@
 // app.js — contrôleur principal : accueil, transport, montage des modes.
 import { startVisuals } from './visuals.js';
-import { ensureStrudel, play, stop, isPlaying } from './strudel-engine.js';
+import { ensureStrudel, play, stop, isPlaying, readLevels } from './strudel-engine.js';
 import { createSequencer } from './modes/sequencer.js';
 import { createPads } from './modes/pads.js';
 import { openVisualizer } from './visualizer.js';
@@ -99,12 +99,18 @@ function openCodeWindow() {
 
 // Curseur de lecture synchronisé sur l'horloge audio.
 function tickLoop() {
-  if (app.transport.playing && app.mode && app.mode.highlight) {
-    const steps = app.mode.stepsCount ? app.mode.stepsCount() : 16;
-    const elapsed = getAudioTime() - app.transport.startTime;
-    const cycles = elapsed * app.transport.cps;
-    const step = ((Math.floor(cycles * steps) % steps) + steps) % steps;
-    app.mode.highlight(step);
+  const fab = $('kz-play');
+  if (app.transport.playing) {
+    const { level } = readLevels();
+    if (fab) fab.style.setProperty('--beat', level.toFixed(3)); // pulsation du FAB sur le son
+    if (app.mode && app.mode.highlight) {
+      const steps = app.mode.stepsCount ? app.mode.stepsCount() : 16;
+      const cycles = (getAudioTime() - app.transport.startTime) * app.transport.cps;
+      const step = ((Math.floor(cycles * steps) % steps) + steps) % steps;
+      app.mode.highlight(step);
+    }
+  } else if (fab) {
+    fab.style.setProperty('--beat', '0');
   }
   requestAnimationFrame(tickLoop);
 }
@@ -121,6 +127,7 @@ function mountMode(key) {
     getLevel: () => app.level,
     getBpm: () => app.bpm,
     isPlaying: () => app.transport.playing,
+    getElapsedCycles: () => (app.transport.playing ? (getAudioTime() - app.transport.startTime) * app.transport.cps : -1),
     requestPlay,
     registerBuildCode: () => {},
   };
@@ -134,6 +141,7 @@ function mountMode(key) {
 function showScreen(name) {
   $('kz-home').classList.toggle('hidden', name !== 'home');
   $('kz-studio').classList.toggle('hidden', name !== 'studio');
+  $('kz-play').classList.toggle('hidden', name !== 'studio'); // FAB visible en studio seulement
 }
 
 function buildHome() {

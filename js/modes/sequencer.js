@@ -336,43 +336,49 @@ export function createSequencer(ctx) {
   function renderSongPanel() {
     const box = el('div', 'kz-song');
     const head = el('div', 'kz-song-head');
-    const ti = el('span', 'kz-song-title'); ti.innerHTML = `${icon('song')} Morceau`;
+    const ti = el('span', 'kz-song-title'); ti.innerHTML = `${icon('song')} Loops`;
     head.append(ti);
     const toggle = el('button', 'kz-song-toggle' + (st.songMode ? ' on' : ''));
     toggle.innerHTML = st.songMode ? `${icon('song')} Morceau` : `${icon('loop')} Boucle`;
+    toggle.title = st.songMode ? 'Joue tous les loops à la suite' : 'Joue seulement le loop courant en boucle';
     toggle.addEventListener('click', () => { st.songMode = !st.songMode; render(); changed(); });
     head.append(toggle);
     box.append(head);
 
-    const list = el('div', 'kz-scenes');
     if (!st.scenes.length) {
-      list.append(el('span', 'kz-song-empty', "Ajoute des loops → ils s'enchaînent en morceau."));
+      box.append(el('div', 'kz-song-empty', "Aucun loop. Fais un motif, puis « Enregistrer ce loop » — ils s'enchaîneront en morceau."));
+    } else {
+      const list = el('div', 'kz-loops');
+      st.scenes.forEach((sc, i) => {
+        const k = KIND[sc.kind] || KIND.loop;
+        const row = el('div', 'kz-loop-row k-' + sc.kind + (st.editing === i ? ' editing' : ''));
+        const main = el('button', 'kz-loop-main');
+        main.innerHTML = `<span class="kz-loop-num">${i + 1}</span><span class="kz-loop-ic">${icon(k.e)}</span><span class="kz-loop-name">${k.l}</span>`;
+        main.title = 'Éditer ce loop dans la grille';
+        main.addEventListener('click', () => loadScene(i));
+        row.append(main);
+        const bars = el('button', 'kz-loop-bars', sc.bars + '×');
+        bars.title = 'Mesures (toucher pour changer)';
+        bars.addEventListener('click', () => { const seq = [1, 2, 4, 8]; sc.bars = seq[(seq.indexOf(sc.bars) + 1) % seq.length]; render(); changed(); });
+        row.append(bars);
+        const acts = el('div', 'kz-loop-acts');
+        const mk = (ic, title, fn, disabled) => { const b = el('button', 'kz-loop-btn'); b.innerHTML = icon(ic); b.title = title; if (disabled) b.disabled = true; else b.addEventListener('click', fn); return b; };
+        acts.append(mk('up', 'Monter', () => moveScene(i, -1), i === 0));
+        acts.append(mk('down', 'Descendre', () => moveScene(i, 1), i === st.scenes.length - 1));
+        acts.append(mk('dup', 'Dupliquer', () => dupScene(i)));
+        acts.append(mk('trash', 'Supprimer', () => delScene(i)));
+        row.append(acts);
+        list.append(row);
+      });
+      box.append(list);
     }
-    st.scenes.forEach((sc, i) => {
-      const k = KIND[sc.kind] || KIND.loop;
-      const chip = el('div', 'kz-scene k-' + sc.kind + (st.editing === i ? ' editing' : ''));
-      const main = el('button', 'kz-scene-main');
-      main.innerHTML = `<b>${i + 1}</b><span>${icon(k.e)}</span>`;
-      main.title = k.l + ' — toucher pour éditer';
-      main.addEventListener('click', () => loadScene(i));
-      chip.append(main);
-      const bars = el('button', 'kz-scene-bars', sc.bars + '×');
-      bars.title = 'Nombre de mesures';
-      bars.addEventListener('click', () => { const seq = [1, 2, 4, 8]; sc.bars = seq[(seq.indexOf(sc.bars) + 1) % seq.length]; render(); changed(); });
-      chip.append(bars);
-      const del = el('button', 'kz-scene-del'); del.innerHTML = icon('close');
-      del.addEventListener('click', () => { st.scenes.splice(i, 1); if (st.editing === i) st.editing = null; else if (st.editing > i) st.editing--; render(); changed(); });
-      chip.append(del);
-      list.append(chip);
-    });
-    box.append(list);
 
     const acts = el('div', 'kz-song-acts');
-    const add = el('button', 'kz-chip'); add.innerHTML = `${icon('plus')} Ajouter ce loop`;
+    const add = el('button', 'kz-chip'); add.innerHTML = `${icon('plus')} Enregistrer ce loop`;
     add.addEventListener('click', () => addLoop());
     acts.append(add);
-    if (st.editing != null) {
-      const upd = el('button', 'kz-chip'); upd.innerHTML = `${icon('loop')} Mettre à jour ${st.editing + 1}`;
+    if (st.editing != null && st.scenes[st.editing]) {
+      const upd = el('button', 'kz-chip'); upd.innerHTML = `${icon('loop')} Mettre à jour le loop ${st.editing + 1}`;
       upd.addEventListener('click', () => updateScene());
       acts.append(upd);
     }
@@ -386,8 +392,24 @@ export function createSequencer(ctx) {
     return box;
   }
 
-  function addLoop() { st.scenes.push({ kind: 'loop', bars: 4, snap: snapshot() }); st.editing = st.scenes.length - 1; st.songMode = true; render(); changed(); toast('Loop ' + st.scenes.length + ' ajouté 🎬'); }
+  function addLoop() { st.scenes.push({ kind: 'loop', bars: 4, snap: snapshot() }); st.editing = st.scenes.length - 1; st.songMode = true; render(); changed(); toast('Loop ' + st.scenes.length + ' enregistré'); }
   function updateScene() { if (st.editing == null) return; st.scenes[st.editing].snap = snapshot(); render(); changed(); toast('Loop ' + (st.editing + 1) + ' mis à jour'); }
+  function moveScene(i, dir) {
+    const j = i + dir; if (j < 0 || j >= st.scenes.length) return;
+    const t = st.scenes[i]; st.scenes[i] = st.scenes[j]; st.scenes[j] = t;
+    if (st.editing === i) st.editing = j; else if (st.editing === j) st.editing = i;
+    render(); changed();
+  }
+  function dupScene(i) {
+    st.scenes.splice(i + 1, 0, clone(st.scenes[i]));
+    if (st.editing != null && st.editing > i) st.editing++;
+    render(); changed(); toast('Loop dupliqué');
+  }
+  function delScene(i) {
+    st.scenes.splice(i, 1);
+    if (st.editing === i) st.editing = null; else if (st.editing != null && st.editing > i) st.editing--;
+    render(); changed();
+  }
   function loadScene(i) {
     const snap = clone(st.scenes[i].snap);
     if (!snap) return;
@@ -417,6 +439,18 @@ export function createSequencer(ctx) {
     root.querySelectorAll('.kz-cell').forEach((c) => {
       c.classList.toggle('playing', +c.dataset.step === step);
     });
+    // Loop en cours de lecture (mode Morceau) : surligne la ligne active.
+    if (st.songMode && st.scenes.length && ctx.getElapsedCycles) {
+      const rows = root.querySelectorAll('.kz-loop-row');
+      if (!rows.length) return;
+      const cyc = ctx.getElapsedCycles();
+      if (cyc < 0) { rows.forEach((r) => r.classList.remove('now')); return; }
+      const total = st.scenes.reduce((a, s) => a + s.bars, 0) || 1;
+      const pos = cyc % total;
+      let idx = 0, acc = 0;
+      for (let n = 0; n < st.scenes.length; n++) { acc += st.scenes[n].bars; if (pos < acc) { idx = n; break; } }
+      rows.forEach((r, n) => r.classList.toggle('now', n === idx));
+    }
   }
 
   // --- API mode ---

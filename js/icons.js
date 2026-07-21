@@ -22,14 +22,12 @@ const I = {
   // --- modes ---
   grid: S('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 12h18M9 5v14M15 5v14"/>'),
   pads: S('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'),
-  blocks: S('<rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/><rect x="8.5" y="5" width="7" height="7" rx="1"/>'),
   // --- outils séquenceur ---
   dice: S('<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor" stroke="none"/>'),
   eraser: S('<path d="M4 15l7-7 6 6-4 4H8z"/><path d="M9 20h11"/>'),
   sliders: S('<path d="M4 8h8M17 8h3M4 16h3M12 16h8"/><circle cx="14" cy="8" r="2.4" fill="currentColor" stroke="none"/><circle cx="9" cy="16" r="2.4" fill="currentColor" stroke="none"/>'),
   scale: S('<path d="M9 18V6l10-2v11"/><circle cx="7" cy="18" r="2" fill="currentColor" stroke="none"/><circle cx="17" cy="15" r="2" fill="currentColor" stroke="none"/>'),
   steps: S('<path d="M5 20V9M10 20V4M15 20V12M20 20V7"/>'),
-  viz: S('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5.2 5.2l2 2M16.8 16.8l2 2M18.8 5.2l-2 2M7.2 16.8l-2 2"/>'),
   // Kaléidoscope : deux triangles (hexagramme) + cercle + centre = mandala.
   kaleido: S('<circle cx="12" cy="12" r="9.2"/><path d="M12 3.2l7.6 13.2H4.4z"/><path d="M12 20.8L4.4 7.6h15.2z"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/>'),
   // --- morceau ---
@@ -53,6 +51,9 @@ const I = {
   headphones: S('<path d="M5 13v3a2 2 0 002 2h1v-6H7a2 2 0 00-2 2zM19 13v3a2 2 0 01-2 2h-1v-6h1a2 2 0 012 2z"/><path d="M5 13a7 7 0 0114 0"/>'),
   power: S('<path d="M12 4v8"/><path d="M7.5 7a7 7 0 109 0"/>'),
   code: S('<path d="M9 8l-4 4 4 4M15 8l4 4-4 4M13 6l-2 12"/>'),
+  up: S('<path d="M6 15l6-6 6 6"/>'),
+  down: S('<path d="M6 9l6 6 6-6"/>'),
+  dup: S('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/>'),
   // --- sons (catégories) ---
   kick: S('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/>'),
   snare: S('<ellipse cx="12" cy="8.5" rx="8" ry="2.6"/><path d="M4 8.5v5c0 1.5 3.6 2.6 8 2.6s8-1.1 8-2.6v-5"/><path d="M6 16l-1 3M18 16l1 3"/>'),

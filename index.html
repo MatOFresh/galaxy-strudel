@@ -48,7 +48,6 @@
     <div id="kz-mode-root" class="kz-mode-root"></div>
 
     <footer class="kz-transport">
-      <button id="kz-play" class="kz-play">▶️</button>
       <div class="kz-tempo-wrap">
         <input id="kz-tempo" type="range" min="70" max="180" value="110" />
         <span id="kz-tempo-val" class="kz-tempo-val">110 BPM</span>
@@ -56,6 +55,9 @@
       <button id="kz-code-btn" class="kz-code-launch" title="Code Window">Code</button>
     </footer>
   </section>
+
+  <!-- Play/Pause flottant : hors des sections pour rester AU-DESSUS de tous les menus -->
+  <button id="kz-play" class="kz-play hidden" title="Play / Pause">▶︎</button>
 
   <script type="module" src="./js/app.js"></script>
 </body>

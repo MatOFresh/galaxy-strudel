@@ -71,7 +71,6 @@ button { font-family: inherit; cursor: pointer; color: var(--txt); }
 }
 .kz-tagline { color: var(--txt-dim); font-size: 1rem; margin: 8px 0 0; max-width: 340px; }
 .kz-choose { color: var(--txt); font-weight: 700; margin: 6px 0 -4px; font-size: 1.1rem; }
-.kz-loadhint { color: var(--txt-dim); font-size: .8rem; }
 
 .kz-mode-cards { display: grid; gap: 16px; width: 100%; max-width: 460px; }
 .kz-mode-card {
@@ -111,7 +110,7 @@ button { font-family: inherit; cursor: pointer; color: var(--txt); }
   position: sticky; top: 0; z-index: 5;
   display: flex; align-items: center; gap: 12px;
   padding: max(10px, env(safe-area-inset-top)) 14px 10px;
-  background: rgba(10, 5, 37, .75); backdrop-filter: blur(12px);
+  background: rgba(12, 14, 19, .8); backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--panel-b);
 }
 .kz-top-btn {
@@ -122,23 +121,28 @@ button { font-family: inherit; cursor: pointer; color: var(--txt); }
 
 .kz-mode-root { flex: 1; padding: 14px 12px 120px; }
 
-/* ---------- TRANSPORT ---------- */
+/* ---------- TRANSPORT (barre compacte : tempo + code) ---------- */
 .kz-transport {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
-  display: flex; align-items: center; gap: 16px;
-  padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
-  background: rgba(10, 5, 37, .85); backdrop-filter: blur(14px);
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  padding-right: 92px; /* laisse la place au FAB play flottant */
+  background: rgba(12, 14, 19, .82); -webkit-backdrop-filter: blur(16px) saturate(160%); backdrop-filter: blur(16px) saturate(160%);
   border-top: 1px solid var(--panel-b);
 }
+/* Play/Pause = bouton flottant TOUJOURS accessible (au-dessus des menus) */
 .kz-play {
-  width: 64px; height: 64px; border-radius: 50%; border: none; font-size: 1.9rem;
-  background: linear-gradient(135deg, var(--cyan), var(--blue));
-  box-shadow: 0 0 24px rgba(56, 249, 215, .55); flex: none;
+  position: fixed; right: 16px; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 250;
+  width: 60px; height: 60px; border-radius: 50%; border: none;
+  display: inline-flex; align-items: center; justify-content: center; color: #05121a;
+  background: linear-gradient(135deg, var(--ice), var(--ice-deep));
+  box-shadow: 0 6px 18px rgba(0,0,0,.45), 0 0 calc(16px + var(--beat,0) * 30px) rgba(87,209,255,.6);
 }
-.kz-play.playing { background: linear-gradient(135deg, var(--magenta), var(--gold)); box-shadow: 0 0 28px rgba(255, 78, 205, .6); }
-.kz-play:active { transform: scale(.93); }
-.kz-tempo-wrap { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-.kz-tempo-val { color: var(--txt-dim); font-size: .8rem; font-weight: 700; }
+.kz-play.playing { background: linear-gradient(135deg, var(--amber), var(--amber-lo)); box-shadow: 0 6px 18px rgba(0,0,0,.45), 0 0 calc(18px + var(--beat,0) * 38px) rgba(255,122,44,.6); }
+.kz-play .ic { width: 1.7rem; height: 1.7rem; }
+.kz-play:active { transform: scale(.9); }
+.kz-tempo-wrap { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.kz-tempo-val { color: var(--txt-dim); font-size: .78rem; font-weight: 700; }
 
 /* ---------- SÉQUENCEUR ---------- */
 .kz-seq-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
@@ -220,6 +224,31 @@ button { font-family: inherit; cursor: pointer; color: var(--txt); }
 .kz-scene-del { border: none; border-left: 1px solid var(--panel-b); background: rgba(255,255,255,.04); color: var(--txt-dim); padding: 0 8px; font-size: .8rem; }
 .kz-scene-del:active, .kz-scene-bars:active { background: rgba(255,255,255,.12); }
 .kz-song-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Liste de loops (gestion ergonomique du morceau) */
+.kz-loops { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.kz-loop-row {
+  display: flex; align-items: stretch; gap: 8px; border-radius: 12px; padding: 6px 8px;
+  border: 1.5px solid var(--panel-b); background: rgba(255,255,255,.04);
+  border-left: 4px solid var(--ice); transition: box-shadow .18s ease, border-color .18s ease, background .18s ease;
+}
+.kz-loop-row.k-break { border-left-color: var(--gold); }
+.kz-loop-row.k-drop { border-left-color: var(--magenta); }
+.kz-loop-row.editing { outline: 2px solid var(--ice); outline-offset: 1px; }
+.kz-loop-row.now { background: rgba(87,209,255,.12); box-shadow: 0 0 18px rgba(87,209,255,.35); border-color: var(--ice); }
+.kz-loop-row.now.k-drop { background: rgba(255,106,43,.14); box-shadow: 0 0 18px rgba(255,106,43,.4); }
+.kz-loop-main { flex: 1; display: flex; align-items: center; gap: 10px; border: none; background: transparent; color: var(--txt); font-weight: 700; padding: 6px 4px; justify-content: flex-start; }
+.kz-loop-num { font-family: var(--mono); font-weight: 700; color: var(--ice); min-width: 1.4em; text-align: center; }
+.kz-loop-ic .ic { width: 1.25rem; height: 1.25rem; }
+.kz-loop-row.k-drop .kz-loop-num { color: var(--magenta); }
+.kz-loop-row.k-break .kz-loop-num { color: var(--gold); }
+.kz-loop-name { font-size: .9rem; }
+.kz-loop-bars { border: 1px solid var(--panel-b); background: rgba(255,255,255,.05); color: var(--txt-dim); border-radius: 9px; padding: 0 10px; font-family: var(--mono); font-weight: 700; font-size: .8rem; flex: none; }
+.kz-loop-acts { display: flex; gap: 4px; align-items: center; }
+.kz-loop-btn { border: none; background: rgba(255,255,255,.05); color: var(--txt); width: 34px; height: 34px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; }
+.kz-loop-btn .ic { width: 1.1rem; height: 1.1rem; }
+.kz-loop-btn:disabled { opacity: .28; }
+.kz-loop-btn:active { transform: scale(.9); }
 .kz-chip.kz-drop { border-color: var(--magenta); background: rgba(255,78,205,.15); }
 .kz-chip.kz-break { border-color: var(--gold); background: rgba(255,209,102,.15); }
 
@@ -313,7 +342,7 @@ button { font-family: inherit; cursor: pointer; color: var(--txt); }
 
 /* ---------- POLICE CONSOLE (mono partout) + re-polish Apple ---------- */
 body { font-family: var(--mono); letter-spacing: .005em; }
-.kz-tagline, .kz-mode-desc, .kz-import-hint, .kz-pads-hint, .kz-song-empty, .kz-loadhint, .note { letter-spacing: 0; }
+.kz-tagline, .kz-mode-desc, .kz-import-hint, .kz-pads-hint, .kz-song-empty, .note { letter-spacing: 0; }
 .kz-mode-title, .kz-mode-name, .kz-song-title, .kz-cat-title, .kz-choose { letter-spacing: .01em; }
 /* Feuille modale : glisse du bas (Apple : critically damped, sans rebond) */
 @keyframes sheet-up { from { transform: translateY(26px); opacity: .3; } to { transform: none; opacity: 1; } }
