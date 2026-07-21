@@ -578,6 +578,14 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .kz-sound-item { position: relative; display: flex; }
 .kz-sound-item .kz-icon-btn { flex: 1; padding-top: 14px; }
 .kz-sound-btn { justify-content: flex-start; }
+/* son déjà utilisé sur une piste : grisé + badge (mais toujours écoutable) */
+.kz-icon-btn.used { opacity: .42; filter: grayscale(.6); }
+.kz-used-badge {
+  position: absolute; bottom: 5px; right: 5px; width: 20px; height: 20px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; background: var(--steel); color: #06121a;
+}
+.kz-used-badge .ic { width: 13px; height: 13px; }
 /* étiquette de sonorité (genre) colorée, en bas de la tuile */
 .kz-vibe-tag {
   display: inline-flex; align-items: center; gap: 4px; margin-top: 5px;

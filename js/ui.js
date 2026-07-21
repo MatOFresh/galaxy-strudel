@@ -44,7 +44,10 @@ export function iconButton(emoji, label, onClick, cls = '') {
 }
 
 // Ouvre la bibliothèque de sons (modale). onPick(soundItem).
-export function openSoundLibrary(onPick, filterType = null) {
+// opts.used = ids de sons déjà pris (grisés, non re-sélectionnables) — évite
+// de mettre deux fois le même instrument sur des pistes différentes.
+export function openSoundLibrary(onPick, filterType = null, opts = {}) {
+  const usedIds = opts.used instanceof Set ? opts.used : new Set(opts.used || []);
   const overlay = el('div', 'kz-modal-overlay');
   const modal = el('div', 'kz-modal');
 
@@ -152,10 +155,15 @@ export function openSoundLibrary(onPick, filterType = null) {
         const item = el('div', 'kz-sound-item');
         const v = getVibe(s.vibe);
         if (v) item.style.setProperty('--vc', v.color);
-        const b = el('button', 'kz-icon-btn kz-sound-btn');
+        const used = usedIds.has(s.id);
+        const b = el('button', 'kz-icon-btn kz-sound-btn' + (used ? ' used' : ''));
         b.innerHTML = `<span class="kz-emoji">${icon(s.emoji)}</span><span class="kz-ibl">${s.label}</span>`
           + (v ? '<span class="kz-vibe-tag"><span class="kz-vibe-swatch"></span>' + v.label + '</span>' : '');
-        b.addEventListener('click', () => { onPick(s); overlay.remove(); });
+        if (used) { const bd = el('span', 'kz-used-badge'); bd.innerHTML = icon('check'); b.append(bd); }
+        b.addEventListener('click', () => {
+          if (used) { toast('« ' + s.label + ' » est déjà sur une piste'); return; }
+          onPick(s); overlay.remove();
+        });
         item.append(b);
         // Bouton « écouter » : essaie le son sans le choisir ni fermer la modale.
         const tryBtn = el('button', 'kz-sound-try'); tryBtn.innerHTML = icon('play'); tryBtn.title = 'Écouter';

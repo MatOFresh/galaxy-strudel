@@ -207,7 +207,7 @@ export function createSequencer(ctx) {
     const head = el('div', 'kz-track-head');
     const pick = el('button', 'kz-track-sound');
     pick.innerHTML = `<span class="kz-emoji">${snd ? icon(snd.emoji) : icon('gain')}</span><span>${snd ? snd.label : d.soundId}</span>`;
-    pick.addEventListener('click', () => openSoundLibrary((s) => { d.soundId = s.id; render(); changed(); }, 'drum'));
+    pick.addEventListener('click', () => openSoundLibrary((s) => { d.soundId = s.id; render(); changed(); }, 'drum', { used: usedDrumIds(d) }));
     head.append(pick);
     if (level === 'expert') {
       const mute = el('button', 'kz-mini' + (d.muted ? ' on' : '')); mute.innerHTML = icon(d.muted ? 'mute' : 'gain');
@@ -295,8 +295,12 @@ export function createSequencer(ctx) {
   }
 
   // --- Actions ---
+  // Sons déjà pris par les AUTRES pistes de batterie (empêche les doublons).
+  function usedDrumIds(exclude) {
+    return new Set(st.drums.filter((d) => d !== exclude).map((d) => d.soundId));
+  }
   function addDrumTrack() {
-    openSoundLibrary((s) => { st.drums.push(makeDrum(s.id)); render(); changed(); }, 'drum');
+    openSoundLibrary((s) => { st.drums.push(makeDrum(s.id)); render(); changed(); }, 'drum', { used: usedDrumIds(null) });
   }
   function applyKit(name) {
     const kit = KITS[name];
