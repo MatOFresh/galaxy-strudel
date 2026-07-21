@@ -1,5 +1,5 @@
 // ui.js — petits composants réutilisés par les modes.
-import { getCategories, importFiles } from './sounds.js';
+import { getCategories, importFiles, VIBES, getVibe } from './sounds.js';
 import { previewSound } from './strudel-engine.js';
 import { icon } from './icons.js';
 
@@ -112,23 +112,50 @@ export function openSoundLibrary(onPick, filterType = null) {
   importBar.append(el('span', 'kz-import-hint', 'Ta voix, un bruit, une note... (mp3, wav)'));
   modal.append(importBar);
 
+  // Filtre par sonorité (genre) : chips colorées. On garde l'orga par famille.
+  let genreFilter = null;
+  const filterBar = el('div', 'kz-vibe-filter');
+  const chips = {};
+  const mkChip = (id, label, color) => {
+    const c = el('button', 'kz-vibe-chip' + (genreFilter === id ? ' on' : ''));
+    if (color) { c.style.setProperty('--vc', color); c.classList.add('has-dot'); }
+    c.innerHTML = (color ? '<span class="kz-vibe-swatch"></span>' : '') + label;
+    c.addEventListener('click', () => {
+      genreFilter = (genreFilter === id) ? null : id;
+      Object.values(chips).forEach((x) => x.classList.remove('on'));
+      if (genreFilter) chips[genreFilter].classList.add('on'); else chips.__all.classList.add('on');
+      renderCats();
+    });
+    chips[id || '__all'] = c;
+    filterBar.append(c);
+  };
+  mkChip(null, 'Tous', null);
+  chips.__all.classList.toggle('on', !genreFilter);
+  Object.entries(VIBES).forEach(([id, v]) => mkChip(id, v.label, v.color));
+  modal.append(filterBar);
+
   const body = el('div', 'kz-modal-body');
   modal.append(body);
 
   function renderCats() {
     body.innerHTML = '';
     const cats = getCategories();
+    let total = 0;
     for (const [cat, sounds] of Object.entries(cats)) {
-      const list = filterType ? sounds.filter((s) => s.type === filterType) : sounds;
+      let list = filterType ? sounds.filter((s) => s.type === filterType) : sounds;
+      if (genreFilter) list = list.filter((s) => s.vibe === genreFilter);
       if (!list.length) continue;
+      total += list.length;
       body.append(el('h3', 'kz-cat-title', cat));
       const grid = el('div', 'kz-sound-grid');
       list.forEach((s) => {
         const item = el('div', 'kz-sound-item');
-        const b = iconButton(icon(s.emoji), s.label, () => {
-          onPick(s);
-          overlay.remove();
-        });
+        const v = getVibe(s.vibe);
+        if (v) item.style.setProperty('--vc', v.color);
+        const b = el('button', 'kz-icon-btn kz-sound-btn');
+        b.innerHTML = `<span class="kz-emoji">${icon(s.emoji)}</span><span class="kz-ibl">${s.label}</span>`
+          + (v ? '<span class="kz-vibe-tag"><span class="kz-vibe-swatch"></span>' + v.label + '</span>' : '');
+        b.addEventListener('click', () => { onPick(s); overlay.remove(); });
         item.append(b);
         // Bouton « écouter » : essaie le son sans le choisir ni fermer la modale.
         const tryBtn = el('button', 'kz-sound-try'); tryBtn.innerHTML = icon('play'); tryBtn.title = 'Écouter';
@@ -143,6 +170,7 @@ export function openSoundLibrary(onPick, filterType = null) {
       });
       body.append(grid);
     }
+    if (!total) body.append(el('div', 'kz-voice-hint', 'Aucun son de ce genre dans ce filtre.'));
   }
   renderCats();
 

@@ -577,6 +577,26 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .kz-sound-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; }
 .kz-sound-item { position: relative; display: flex; }
 .kz-sound-item .kz-icon-btn { flex: 1; padding-top: 14px; }
+.kz-sound-btn { justify-content: flex-start; }
+/* étiquette de sonorité (genre) colorée, en bas de la tuile */
+.kz-vibe-tag {
+  display: inline-flex; align-items: center; gap: 4px; margin-top: 5px;
+  font-size: .6rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase;
+  color: var(--vc); font-family: var(--mono);
+}
+.kz-vibe-swatch { width: 7px; height: 7px; border-radius: 2px; background: var(--vc); flex: none; box-shadow: 0 0 6px var(--vc); }
+.kz-sound-item .kz-icon-btn { border-top: none; box-shadow: inset 0 2px 0 -1px var(--vc, transparent); }
+/* barre de filtre par genre (chips colorées, défilable) */
+.kz-vibe-filter { display: flex; gap: 7px; overflow-x: auto; padding: 10px 2px 4px; margin: 0 -2px; scrollbar-width: none; }
+.kz-vibe-filter::-webkit-scrollbar { display: none; }
+.kz-vibe-chip {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  border: 1.5px solid var(--panel-b); background: var(--panel); color: var(--txt-dim);
+  border-radius: 999px; padding: 7px 13px; font-family: var(--mono); font-weight: 700; font-size: .78rem;
+}
+.kz-vibe-chip .kz-vibe-swatch { box-shadow: none; }
+.kz-vibe-chip.on { color: var(--txt); border-color: var(--vc, var(--ice)); background: color-mix(in srgb, var(--vc, var(--ice)) 18%, transparent); box-shadow: 0 0 14px color-mix(in srgb, var(--vc, var(--ice)) 45%, transparent); }
+.kz-vibe-chip:active { transform: scale(.94); }
 /* pastille « écouter » en haut à droite de chaque son */
 .kz-sound-try {
   position: absolute; top: 5px; right: 5px; width: 26px; height: 26px;
