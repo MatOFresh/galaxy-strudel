@@ -361,12 +361,28 @@ export function createSequencer(ctx) {
     return box;
   }
 
-  function regenMelody(density) {
+  // Régénère la mélodie avec un CARACTÈRE (registre + contour) selon l'émotion.
+  // noteRows : index 0 = aigu (aiguës en haut de la grille).
+  function regenMelodyShaped(prof) {
     if (!st.melo) return;
-    const rows = st.melo.noteRows;
-    st.melo.cells = Array(st.steps).fill(null).map(() => (Math.random() < density ? Math.floor(Math.random() * rows.length) : null));
-    let placed = st.melo.cells.filter((c) => c != null).length;
-    while (placed < 2) { const i = Math.floor(Math.random() * st.steps); if (st.melo.cells[i] == null) { st.melo.cells[i] = Math.floor(Math.random() * rows.length); placed++; } }
+    const R = st.melo.noteRows.length;
+    const center = Math.round((1 - prof.bias) * (R - 1));   // bias 1 -> aigu (index 0)
+    const span = Math.max(1, Math.floor(R * 0.5));
+    const cells = [];
+    for (let i = 0; i < st.steps; i++) {
+      if (Math.random() > prof.density) { cells.push(null); continue; }
+      const t = st.steps > 1 ? i / (st.steps - 1) : 0;
+      let target = center;
+      if (prof.contour === 'up') target = center + Math.round((0.5 - t) * span);        // monte (vers l'aigu)
+      else if (prof.contour === 'down') target = center + Math.round((t - 0.5) * span);  // descend
+      else if (prof.contour === 'wave') target = center + Math.round(Math.sin(t * Math.PI * 2) * span * 0.5);
+      else target = center + Math.round((Math.random() - 0.5) * span);                    // aléatoire (agité)
+      target += Math.round((Math.random() - 0.5) * 2);      // petit grain
+      cells.push(Math.max(0, Math.min(R - 1, target)));
+    }
+    let placed = cells.filter((c) => c != null).length;
+    while (placed < 3) { const i = Math.floor(Math.random() * st.steps); if (cells[i] == null) { cells[i] = center; placed++; } }
+    st.melo.cells = cells;
   }
 
   function setDrumEnergy(energy) {
@@ -387,7 +403,7 @@ export function createSequencer(ctx) {
     if (st.bass) st.bass.noteRows = buildNoteRows(st.scale, 1, 2);
     Object.assign(st.dj, defaultDjState(), emo.dj);              // effets de l'ambiance (exclusifs)
     setDrumEnergy(emo.energy);
-    regenMelody(0.25 + emo.energy * 0.35);
+    regenMelodyShaped(emo.mel || { density: 0.25 + emo.energy * 0.35, bias: 0.5, contour: 'rand' });
     if (st.bass) {
       const lo = st.bass.noteRows.length - 1;
       st.bass.cells = st.bass.cells.map((_, i) => (i % 4 === 0 ? lo : (Math.random() < emo.energy * 0.35 ? Math.floor(Math.random() * st.bass.noteRows.length) : null)));

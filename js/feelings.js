@@ -5,16 +5,19 @@
 import { el } from './ui.js';
 import { icon } from './icons.js';
 
-// energy 0..1 = densité rythmique/mélodique. dj = état Ultra DJ partiel.
+// energy 0..1 = densité rythmique. dj = état Ultra DJ partiel.
+// mel décrit le CARACTÈRE de la mélodie regénérée :
+//   density = combien de notes, bias 0..1 (grave->aigu) = registre,
+//   contour 'up'|'down'|'wave'|'rand' = la forme du dessin mélodique.
 export const EMOTIONS = [
-  { id: 'joie', icon: 'happy', label: 'Joie', bpm: 128, scale: 'Majeure joyeuse', energy: 0.7, dj: { room: 0.15 } },
-  { id: 'triste', icon: 'sad', label: 'Triste', bpm: 92, scale: 'Mineure cool', energy: 0.3, dj: { filterOn: true, cutoff: 0.34, res: 0.12, room: 0.55, delay: 0.35 } },
-  { id: 'colere', icon: 'angry', label: 'Colère', bpm: 140, scale: 'Mystère', energy: 0.9, dj: { filterOn: true, cutoff: 0.9, res: 0.4, crush: 0.55 } },
-  { id: 'reveur', icon: 'dream', label: 'Rêveur', bpm: 104, scale: 'Majeure joyeuse', energy: 0.35, dj: { room: 0.6, delay: 0.45, phaser: true, vowel: 0.5 } },
-  { id: 'energie', icon: 'energy', label: 'Énergie', bpm: 134, scale: 'Mineure cool', energy: 0.95, dj: { autowah: true, room: 0.1 } },
-  { id: 'sombre', icon: 'dark', label: 'Sombre', bpm: 122, scale: 'Mystère', energy: 0.55, dj: { filterOn: true, cutoff: 0.28, res: 0.22, crush: 0.3, room: 0.3 } },
-  { id: 'chill', icon: 'chill', label: 'Chill', bpm: 108, scale: 'Majeure joyeuse', energy: 0.4, dj: { filterOn: true, cutoff: 0.62, room: 0.35, delay: 0.2 } },
-  { id: 'amour', icon: 'love', label: 'Amour', bpm: 116, scale: 'Do majeur', energy: 0.5, dj: { room: 0.4, vowel: 0.3 } },
+  { id: 'joie', icon: 'happy', label: 'Joie', bpm: 128, scale: 'Majeure joyeuse', energy: 0.7, dj: { room: 0.15 }, mel: { density: 0.55, bias: 0.72, contour: 'up' } },
+  { id: 'triste', icon: 'sad', label: 'Triste', bpm: 92, scale: 'Mineure cool', energy: 0.3, dj: { filterOn: true, cutoff: 0.34, res: 0.12, room: 0.55, delay: 0.35 }, mel: { density: 0.34, bias: 0.28, contour: 'down' } },
+  { id: 'colere', icon: 'angry', label: 'Colère', bpm: 140, scale: 'Mystère', energy: 0.9, dj: { filterOn: true, cutoff: 0.9, res: 0.4, crush: 0.55 }, mel: { density: 0.72, bias: 0.5, contour: 'rand' } },
+  { id: 'reveur', icon: 'dream', label: 'Rêveur', bpm: 104, scale: 'Majeure joyeuse', energy: 0.35, dj: { room: 0.6, delay: 0.45, phaser: true, vowel: 0.5 }, mel: { density: 0.4, bias: 0.82, contour: 'wave' } },
+  { id: 'energie', icon: 'energy', label: 'Énergie', bpm: 134, scale: 'Mineure cool', energy: 0.95, dj: { autowah: true, room: 0.1 }, mel: { density: 0.78, bias: 0.66, contour: 'up' } },
+  { id: 'sombre', icon: 'dark', label: 'Sombre', bpm: 122, scale: 'Mystère', energy: 0.55, dj: { filterOn: true, cutoff: 0.28, res: 0.22, crush: 0.3, room: 0.3 }, mel: { density: 0.46, bias: 0.24, contour: 'wave' } },
+  { id: 'chill', icon: 'chill', label: 'Chill', bpm: 108, scale: 'Majeure joyeuse', energy: 0.4, dj: { filterOn: true, cutoff: 0.62, room: 0.35, delay: 0.2 }, mel: { density: 0.4, bias: 0.5, contour: 'wave' } },
+  { id: 'amour', icon: 'love', label: 'Amour', bpm: 116, scale: 'Do majeur', energy: 0.5, dj: { room: 0.4, vowel: 0.3 }, mel: { density: 0.5, bias: 0.56, contour: 'up' } },
 ];
 
 export function findEmotion(id) { return EMOTIONS.find((e) => e.id === id) || null; }

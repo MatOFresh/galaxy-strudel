@@ -575,6 +575,18 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
 .kz-import-hint { color: var(--txt-dim); font-size: .8rem; }
 .kz-cat-title { color: var(--cyan); font-size: .95rem; margin: 14px 0 8px; }
 .kz-sound-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; }
+.kz-sound-item { position: relative; display: flex; }
+.kz-sound-item .kz-icon-btn { flex: 1; padding-top: 14px; }
+/* pastille « écouter » en haut à droite de chaque son */
+.kz-sound-try {
+  position: absolute; top: 5px; right: 5px; width: 26px; height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--panel-b); background: rgba(10,11,14,.6); color: var(--ice);
+  border-radius: 999px; padding: 0; backdrop-filter: blur(4px);
+}
+.kz-sound-try .ic { width: 14px; height: 14px; }
+.kz-sound-try:active { transform: scale(.9); }
+.kz-sound-try.playing { color: #06121a; background: var(--ice); border-color: transparent; box-shadow: 0 0 14px rgba(87,209,255,.7); }
 
 /* ---------- TOAST ---------- */
 .kz-toast {

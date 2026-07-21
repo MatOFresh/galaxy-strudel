@@ -1,6 +1,9 @@
 // ui.js — petits composants réutilisés par les modes.
 import { getCategories, importFiles } from './sounds.js';
+import { previewSound } from './strudel-engine.js';
 import { icon } from './icons.js';
+
+const SYNTHS = ['sine', 'sawtooth', 'square', 'triangle'];
 
 export function el(tag, cls, txt) {
   const e = document.createElement(tag);
@@ -121,11 +124,22 @@ export function openSoundLibrary(onPick, filterType = null) {
       body.append(el('h3', 'kz-cat-title', cat));
       const grid = el('div', 'kz-sound-grid');
       list.forEach((s) => {
+        const item = el('div', 'kz-sound-item');
         const b = iconButton(icon(s.emoji), s.label, () => {
           onPick(s);
           overlay.remove();
         });
-        grid.append(b);
+        item.append(b);
+        // Bouton « écouter » : essaie le son sans le choisir ni fermer la modale.
+        const tryBtn = el('button', 'kz-sound-try'); tryBtn.innerHTML = icon('play'); tryBtn.title = 'Écouter';
+        tryBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          tryBtn.classList.add('playing');
+          previewSound(s.name, SYNTHS.includes(s.name));
+          setTimeout(() => tryBtn.classList.remove('playing'), 420);
+        });
+        item.append(tryBtn);
+        grid.append(item);
       });
       body.append(grid);
     }

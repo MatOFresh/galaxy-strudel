@@ -100,6 +100,37 @@ export async function play(code) {
   }
 }
 
+// Écoute rapide d'un son (one-shot), pour l'essayer avant de le choisir.
+// 1) via superdough (moteur Strudel) : un seul coup, SANS couper la musique.
+// 2) repli : évalue un one-shot puis restaure le morceau courant.
+let previewTimer = null;
+export async function previewSound(name, isSynth = false) {
+  await ensureStrudel();
+  const ac = window.getAudioContext ? window.getAudioContext() : null;
+  try { if (ac && ac.state === 'suspended') await ac.resume(); } catch (_) { /* noop */ }
+  try {
+    if (typeof window.superdough === 'function' && ac) {
+      const val = isSynth ? { s: name, note: 'c4', gain: 0.9 } : { s: name, gain: 0.9 };
+      window.superdough(val, ac.currentTime + 0.03, 0.6);
+      return true;
+    }
+  } catch (e) { /* repli ci-dessous */ }
+  try {
+    const prev = state.lastCode, wasPlaying = state.playing;
+    const code = isSynth ? `note("c4").s("${name}").gain(0.9)` : `s("${name}").gain(0.9)`;
+    await window.evaluate(code);
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(() => {
+      try {
+        if (wasPlaying && prev) window.evaluate(prev);
+        else if (state.repl && state.repl.stop) state.repl.stop();
+        else if (window.hush) window.hush();
+      } catch (_) { /* noop */ }
+    }, 650);
+    return true;
+  } catch (e) { return false; }
+}
+
 export function stop() {
   // repl.stop() est le SEUL arrêt fiable (cf. bug : window.hush n'arrête rien).
   try {
