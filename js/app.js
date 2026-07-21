@@ -126,6 +126,7 @@ function mountMode(key) {
     root: container,
     getLevel: () => app.level,
     getBpm: () => app.bpm,
+    setBpm,
     isPlaying: () => app.transport.playing,
     getElapsedCycles: () => (app.transport.playing ? (getAudioTime() - app.transport.startTime) * app.transport.cps : -1),
     requestPlay,
@@ -160,6 +161,18 @@ function buildHome() {
   });
   // toggle niveau sur l'accueil
   syncLevelButtons();
+}
+
+// Change le tempo depuis n'importe quel mode (ex : Feelings) + resync UI/curseur.
+function setBpm(v) {
+  app.bpm = Math.max(60, Math.min(180, Math.round(v)));
+  const tempo = $('kz-tempo');
+  if (tempo) tempo.value = app.bpm;
+  const lbl = $('kz-tempo-val');
+  if (lbl) lbl.textContent = app.bpm + ' BPM';
+  app.transport.cps = app.bpm / 240;
+  app.transport.startTime = getAudioTime();
+  requestPlay();
 }
 
 function setLevel(level) {
@@ -200,14 +213,7 @@ function init() {
   $('kz-viz-btn').addEventListener('click', openVisualizer);
 
   const tempo = $('kz-tempo');
-  tempo.addEventListener('input', () => {
-    app.bpm = +tempo.value;
-    $('kz-tempo-val').textContent = app.bpm + ' BPM';
-    app.transport.cps = app.bpm / 240;
-    // resync l'origine pour éviter un saut du curseur
-    app.transport.startTime = getAudioTime();
-    requestPlay();
-  });
+  tempo.addEventListener('input', () => setBpm(+tempo.value));
 
   requestAnimationFrame(tickLoop);
 

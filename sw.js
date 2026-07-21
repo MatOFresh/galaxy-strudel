@@ -3,7 +3,7 @@
 // rafraîchit le cache en tâche de fond -> les correctifs poussés arrivent au
 // lancement suivant sans vider le cache à la main.
 // Les samples Strudel viennent du réseau (CDN) au 1er lancement.
-const CACHE = 'galaxie-v10';
+const CACHE = 'galaxie-v11';
 const SHELL = [
   './',
   './index.html',
@@ -17,6 +17,8 @@ const SHELL = [
   './js/visualizer.js',
   './js/icons.js',
   './js/voice.js',
+  './js/draw.js',
+  './js/feelings.js',
   './js/ui.js',
   './js/djfx.js',
   './js/modes/sequencer.js',

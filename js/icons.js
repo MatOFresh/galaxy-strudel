@@ -69,6 +69,19 @@ const I = {
   star: S('<path d="M12 3l2.2 6.5H21l-5.4 3.9 2 6.6L12 16l-5.6 4 2-6.6L3 9.5h6.8z"/>', true),
   noise: S('<path d="M3 12h2l1.5-5 2 10 2-7 2 4 1.5-6 2 8 1.5-4H21"/>'),
   chip: S('<rect x="6" y="6" width="12" height="12" rx="2"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/>'),
+  // --- dessin -> son ---
+  pencil: S('<path d="M5 19l1.5-.4L18 7a1.8 1.8 0 00-2.6-2.6L4 15.9 3.5 19z"/><path d="M14 6l3 3"/>'),
+  wave: S('<path d="M3 12h2l2-6 3 12 3-9 2 5 2-3h4"/>'),
+  // --- feelings (émotions) ---
+  mood: S('<circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01"/><path d="M8.5 14a4 4 0 007 0"/>'),
+  happy: S('<circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01"/><path d="M8.5 14a4 4 0 007 0"/>'),
+  sad: S('<circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01"/><path d="M8.5 15.5a4 4 0 017-.5"/>'),
+  angry: S('<circle cx="12" cy="12" r="9"/><path d="M8 9.5l2.2 1M16 9.5l-2.2 1"/><path d="M9 15.5h6"/>'),
+  dream: S('<circle cx="12" cy="12" r="9"/><path d="M8 11a2 2 0 013 0M13 11a2 2 0 013 0"/><path d="M9.5 15h3"/>'),
+  energy: S('<path d="M11 2L4 13h5l-1 9 8-12h-5z"/>', true),
+  dark: S('<path d="M20.5 14.5A8 8 0 019.5 3.5a8 8 0 1011 11z"/>'),
+  chill: S('<circle cx="12" cy="12" r="9"/><path d="M6.5 10.5h4.5M13 10.5h4.5"/><circle cx="8.7" cy="11.4" r="1.6" fill="currentColor" stroke="none"/><circle cx="15.3" cy="11.4" r="1.6" fill="currentColor" stroke="none"/><path d="M9.5 15.5a4 4 0 005 0"/>'),
+  love: S('<path d="M12 20s-6.5-4.2-8.6-8.3A4.4 4.4 0 0112 6.5a4.4 4.4 0 018.6 5.2C18.5 15.8 12 20 12 20z"/>', true),
 };
 
 export function icon(name) {

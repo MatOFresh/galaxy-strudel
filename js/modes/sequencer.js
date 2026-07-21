@@ -2,6 +2,8 @@
 import { el, slider, openSoundLibrary, iconButton, toast } from '../ui.js';
 import { findSound, KITS, addProcessedSound } from '../sounds.js';
 import { openVoiceStudio } from '../voice.js';
+import { openDrawStudio } from '../draw.js';
+import { EMOTIONS, findEmotion, renderFeelingsPanel } from '../feelings.js';
 import { SCALES, buildNoteRows, drumRowToMini, meloGridToMini, fxChain, assemble } from '../music.js';
 import { defaultDjState, djFxChain, djIsActive, renderDjControls } from '../djfx.js';
 import { icon } from '../icons.js';
@@ -24,6 +26,9 @@ export function createSequencer(ctx) {
     // --- Sous-menu Ultra DJ (effets live sur le beat) ---
     dj: defaultDjState(),
     djOpen: false,
+    // --- Sous-menu Feelings (émotions qui transforment la musique) ---
+    feelOpen: false,
+    mood: null,       // id de l'émotion active
   };
 
   let uid = 0;
@@ -145,7 +150,9 @@ export function createSequencer(ctx) {
     const tools = el('div', 'kz-seq-tools');
     tools.append(iconButton(icon('dice'), 'Surprise', () => { randomize(); toast('Nouveau motif !'); }, 'small'));
     tools.append(iconButton(icon('eraser'), 'Effacer', () => { clearAll(); }, 'small'));
-    tools.append(iconButton(icon('sliders'), 'Ultra DJ', () => { const wasOpen = st.djOpen; st.djOpen = !st.djOpen; render(); if (!wasOpen) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 'small' + ((st.djOpen || djIsActive(st.dj)) ? ' active' : '')));
+    tools.append(iconButton(icon('sliders'), 'Ultra DJ', () => { const wasOpen = st.djOpen; st.djOpen = !st.djOpen; if (st.djOpen) st.feelOpen = false; render(); if (!wasOpen) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 'small' + ((st.djOpen || djIsActive(st.dj)) ? ' active' : '')));
+    tools.append(iconButton(icon('mood'), 'Feelings', () => { const wasOpen = st.feelOpen; st.feelOpen = !st.feelOpen; if (st.feelOpen) st.djOpen = false; render(); if (!wasOpen) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 'small' + ((st.feelOpen || st.mood) ? ' active' : '')));
+    tools.append(iconButton(icon('pencil'), 'Dessin', () => openDrawStudio({ steps: st.steps }, (res) => { applyDrawing(res); }), 'small'));
     tools.append(iconButton(icon('voice'), 'Voix', () => openVoiceStudio(st.scale, async (url) => {
       const item = await addProcessedSound('Ma voix', url, 'melo');
       if (!st.melo) { st.melo = makeMelo(item.id); } else { st.melo.soundId = item.id; }
@@ -175,8 +182,9 @@ export function createSequencer(ctx) {
     if (st.melo) grid.append(renderMeloTrack(st.melo, 'Mélodie', level));
     if (st.bass) grid.append(renderMeloTrack(st.bass, 'Basse', level));
 
-    // Ultra DJ s'ouvre EN HAUT (juste sous les outils), pas en bas.
+    // Ultra DJ / Feelings s'ouvrent EN HAUT (juste sous les outils), pas en bas.
     if (st.djOpen) root.append(renderDjPanel());
+    if (st.feelOpen) root.append(renderFeelPanel());
     root.append(grid);
     root.append(renderSongPanel());
 
@@ -335,6 +343,94 @@ export function createSequencer(ctx) {
     renderDjControls(controls, st.dj, djChange);
     box.append(controls);
     return box;
+  }
+
+  // --- Sous-menu Feelings (émotions -> transforment la musique) ---
+  function renderFeelPanel() {
+    const box = el('div', 'kz-song');
+    const head = el('div', 'kz-song-head');
+    const ti = el('span', 'kz-song-title'); ti.innerHTML = `${icon('mood')} Feelings`;
+    head.append(ti);
+    const close = el('button', 'kz-song-toggle on', 'Fermer');
+    close.addEventListener('click', () => { st.feelOpen = false; render(); });
+    head.append(close);
+    box.append(head);
+    const controls = el('div', 'kz-feel');
+    renderFeelingsPanel(controls, st.mood, (emo) => applyEmotion(emo));
+    box.append(controls);
+    return box;
+  }
+
+  function regenMelody(density) {
+    if (!st.melo) return;
+    const rows = st.melo.noteRows;
+    st.melo.cells = Array(st.steps).fill(null).map(() => (Math.random() < density ? Math.floor(Math.random() * rows.length) : null));
+    let placed = st.melo.cells.filter((c) => c != null).length;
+    while (placed < 2) { const i = Math.floor(Math.random() * st.steps); if (st.melo.cells[i] == null) { st.melo.cells[i] = Math.floor(Math.random() * rows.length); placed++; } }
+  }
+
+  function setDrumEnergy(energy) {
+    st.drums.forEach((d, di) => {
+      d.cells = d.cells.map((_, i) => {
+        if (di === 0) return i % 4 === 0;                         // kick : sur les temps
+        if (di === 1) return i % 8 === 4;                         // snare : backbeat
+        if (di === 2) return Math.random() < (0.25 + energy * 0.6); // hats : densité selon énergie
+        return Math.random() < energy * 0.4;                      // reste : ghost notes
+      });
+    });
+  }
+
+  function applyEmotion(emo) {
+    if (ctx.setBpm) ctx.setBpm(emo.bpm);
+    st.scale = emo.scale;
+    if (st.melo) st.melo.noteRows = buildNoteRows(st.scale, st.melo.octaves, st.melo.base);
+    if (st.bass) st.bass.noteRows = buildNoteRows(st.scale, 1, 2);
+    Object.assign(st.dj, defaultDjState(), emo.dj);              // effets de l'ambiance (exclusifs)
+    setDrumEnergy(emo.energy);
+    regenMelody(0.25 + emo.energy * 0.35);
+    if (st.bass) {
+      const lo = st.bass.noteRows.length - 1;
+      st.bass.cells = st.bass.cells.map((_, i) => (i % 4 === 0 ? lo : (Math.random() < emo.energy * 0.35 ? Math.floor(Math.random() * st.bass.noteRows.length) : null)));
+    }
+    st.mood = emo.id;
+    render(); changed();
+    toast(emo.label + ' ' + '🎛️');
+  }
+
+  // --- Dessin -> son : mappe le tracé sur les pistes ---
+  function applyDrawing({ kind, steps, cols, rnd }) {
+    if (steps !== st.steps) { st.steps = steps; resizeTracks(); }
+    if (kind === 'melo') {
+      if (!st.melo) st.melo = makeMelo('sawtooth');
+      const R = st.melo.noteRows.length;
+      st.melo.cells = cols.map((y) => {
+        if (y == null) return Math.random() < rnd * 0.2 ? Math.floor(Math.random() * R) : null;
+        let row = Math.round(y * (R - 1));                        // haut (y=0) -> aigu (row 0)
+        if (rnd > 0.15 && Math.random() < rnd) row += (Math.random() < 0.5 ? -1 : 1);
+        if (Math.random() < rnd * 0.12) return null;             // petits silences
+        return Math.max(0, Math.min(R - 1, row));
+      });
+      let placed = st.melo.cells.filter((c) => c != null).length;
+      while (placed < 3) { const i = Math.floor(Math.random() * st.steps); if (st.melo.cells[i] == null) { st.melo.cells[i] = Math.floor(Math.random() * R); placed++; } }
+      st.mood = null;
+      render(); changed(); toast('Ton dessin joue la mélodie 🎨');
+    } else {
+      const n = st.drums.length;
+      if (!n) return;
+      st.drums.forEach((d) => (d.cells = d.cells.map(() => false)));
+      cols.forEach((y, i) => {
+        if (y == null) { if (Math.random() < rnd * 0.22) st.drums[Math.floor(Math.random() * n)].cells[i] = true; return; }
+        let band = Math.round((1 - y) * (n - 1));                 // bas (y=1) -> grave (kick, index 0)
+        if (rnd > 0.15 && Math.random() < rnd) band += (Math.random() < 0.5 ? -1 : 1);
+        band = Math.max(0, Math.min(n - 1, band));
+        st.drums[band].cells[i] = true;
+        if (Math.random() < rnd * 0.2) st.drums[Math.floor(Math.random() * n)].cells[i] = true;
+      });
+      st.drums[0].cells[0] = true;                               // fondation kick
+      for (let i = 4; i < st.steps; i += 4) if (Math.random() < 1 - rnd * 0.5) st.drums[0].cells[i] = true;
+      st.mood = null;
+      render(); changed(); toast('Ton dessin joue le rythme 🥁');
+    }
   }
 
   // --- Mode Morceau : panneau + actions ---
