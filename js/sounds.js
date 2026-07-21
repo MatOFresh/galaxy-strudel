@@ -137,6 +137,16 @@ export async function importFiles(fileList) {
   return added;
 }
 
+// Ajoute un son déjà traité (ex. voix autotunée) à la bibliothèque.
+export async function addProcessedSound(label, url, type = 'melo') {
+  let id = 'voix'; let i = 1;
+  while (findSound(id)) { id = 'voix' + i; i++; }
+  await registerSamples({ [id]: [url] });
+  const item = { id, name: id, label, emoji: 'voice', type, imported: true };
+  imported.push(item);
+  return item;
+}
+
 // Kits presets pour démarrer vite (mode Simple).
 export const KITS = {
   'Techno galaxie': ['bd', 'sd', 'hh', 'cp'],

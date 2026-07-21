@@ -1,6 +1,7 @@
 // modes/sequencer.js — grille séquenceur (une ligne par instrument).
 import { el, slider, openSoundLibrary, iconButton, toast } from '../ui.js';
-import { findSound, KITS } from '../sounds.js';
+import { findSound, KITS, addProcessedSound } from '../sounds.js';
+import { openVoiceStudio } from '../voice.js';
 import { SCALES, buildNoteRows, drumRowToMini, meloGridToMini, fxChain, assemble } from '../music.js';
 import { defaultDjState, djFxChain, djIsActive, renderDjControls } from '../djfx.js';
 import { icon } from '../icons.js';
@@ -145,6 +146,12 @@ export function createSequencer(ctx) {
     tools.append(iconButton(icon('dice'), 'Surprise', () => { randomize(); toast('Nouveau motif !'); }, 'small'));
     tools.append(iconButton(icon('eraser'), 'Effacer', () => { clearAll(); }, 'small'));
     tools.append(iconButton(icon('sliders'), 'Ultra DJ', () => { const wasOpen = st.djOpen; st.djOpen = !st.djOpen; render(); if (!wasOpen) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 'small' + ((st.djOpen || djIsActive(st.dj)) ? ' active' : '')));
+    tools.append(iconButton(icon('voice'), 'Voix', () => openVoiceStudio(st.scale, async (url) => {
+      const item = await addProcessedSound('Ma voix', url, 'melo');
+      if (!st.melo) { st.melo = makeMelo(item.id); } else { st.melo.soundId = item.id; }
+      render(); changed();
+      toast('Ta voix joue la mélodie 🎤');
+    }), 'small'));
     if (level === 'expert') {
       // sélecteur de gamme
       const scaleSel = el('select', 'kz-select');

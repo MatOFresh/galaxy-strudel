@@ -408,6 +408,24 @@ body { font-family: var(--mono); letter-spacing: .005em; }
 .kz-code-pre .f { color: var(--ice); }
 .kz-code-pre .n { color: #a9c2d6; }
 
+/* ---------- STUDIO VOIX ---------- */
+.kz-voice-body { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
+.kz-rec-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  border: 1.5px solid var(--panel-b); background: rgba(255,255,255,.05); color: var(--txt);
+  font-family: var(--mono); font-weight: 700; padding: 18px; border-radius: 14px; font-size: 1.05rem;
+}
+.kz-rec-btn.recording { border-color: #ff4d4d; background: rgba(255,77,77,.12); }
+.kz-rec-btn:active { transform: scale(.97); }
+.kz-rec-dot { width: 14px; height: 14px; border-radius: 50%; background: #ff4d4d; flex: none; }
+.kz-rec-dot.on { animation: rec-pulse 1s ease-in-out infinite; }
+@keyframes rec-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,77,77,.5); } 50% { box-shadow: 0 0 0 11px rgba(255,77,77,0); } }
+.kz-voice-hint { color: var(--txt-dim); font-size: .8rem; text-align: center; }
+.kz-voice-row { display: flex; gap: 8px; }
+.kz-voice-row .kz-chip { flex: 1; justify-content: center; }
+.kz-voice-add { justify-content: center; border-color: var(--ice); background: rgba(87,209,255,.14); }
+@media (prefers-reduced-motion: reduce) { .kz-rec-dot.on { animation: none; } }
+
 /* ---------- POLISH STYLE APPLE ---------- */
 /* Typo : tracking négatif sur les grands titres, matériaux translucides,
    feedback au toucher instantané, springs légers. */
