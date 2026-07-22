@@ -13,11 +13,14 @@ export function defaultDjState() {
     chop: 0,          // 0 = off
     reverse: false, autowah: false, phaser: false,
     vowel: 0,         // 0 = off, sinon A/E/I/O/U
+    swing: 0,         // 0 = droit, jusqu'à ~triolet (groove)
   };
 }
 
 // Suffixe d'effets Strudel à coller après un motif (stack(...) / arrange(...)).
-export function djFxChain(dj) {
+// steps = nb de pas de la grille : le swing se cale sur la moitié (les paires
+// de pas), donc 16 pas -> swing des doubles-croches, 8 pas -> des croches.
+export function djFxChain(dj, steps = 16) {
   if (!dj) return '';
   let fx = '';
   if (dj.autowah) fx += '.lpf(sine.range(300,6500).slow(2))';
@@ -35,12 +38,18 @@ export function djFxChain(dj) {
   else if (dj.time === 'fast') fx += '.fast(2)';
   if (dj.chop > 0) fx += `.chop(${dj.chop})`;
   if (dj.reverse) fx += '.rev()';
+  // Swing : décale les pas off-beat pour groover (0 = droit, ~1/3 = triolet).
+  if (dj.swing > 0.01) {
+    const n = Math.max(2, Math.round(steps / 2));
+    const amt = num(dj.swing / 3);
+    fx += `.swingBy(${amt}, ${n})`;
+  }
   return fx;
 }
 
 export function djIsActive(dj) {
   return !!(dj && (dj.filterOn || dj.autowah || dj.reverse || dj.chop || dj.phaser || dj.vowel > 0
-    || dj.time !== 'normal' || dj.room > 0.03 || dj.delay > 0.03 || dj.crush > 0.03 || dj.coarse > 0.03));
+    || dj.time !== 'normal' || dj.room > 0.03 || dj.delay > 0.03 || dj.crush > 0.03 || dj.coarse > 0.03 || dj.swing > 0.02));
 }
 
 // Construit les contrôles DJ dans `container`. onChange() = ré-évaluation (live).
@@ -48,6 +57,9 @@ export function djIsActive(dj) {
 export function renderDjControls(container, dj, onChange) {
   function build() {
     container.innerHTML = '';
+
+    // Swing / Groove : contrôle de feel en tête (le nerf du groove).
+    container.append(slider(`${icon('swing')} Swing / Groove`, dj.swing, (v) => { dj.swing = v; onChange(); }, { format: (v) => (v < 0.01 ? 'droit' : Math.round(v * 100) + '%') }));
 
     // Pad XY filtre
     const padWrap = el('div', 'dj-padwrap');

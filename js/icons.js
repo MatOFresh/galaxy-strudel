@@ -41,6 +41,7 @@ const I = {
   reverse: S('<path d="M8 7h10l-3-3M16 17H6l3 3"/>'),
   chop: S('<circle cx="6" cy="7" r="2"/><circle cx="6" cy="17" r="2"/><path d="M8 8l12 8M8 16L20 8"/>'),
   wah: S('<path d="M3 12c3-7 6 7 9 0s6-7 9 0"/>'),
+  swing: S('<path d="M3 15c2.5 0 3-7 5.5-7S11 15 13.5 15s3-7 5.5-7"/><circle cx="8.5" cy="8" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="8" r="1.4" fill="currentColor" stroke="none"/>'),
   reverb: S('<circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M8.5 8.5a5 5 0 000 7M15.5 8.5a5 5 0 010 7M6 6a9 9 0 000 12M18 6a9 9 0 010 12"/>'),
   echo: S('<circle cx="6" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="12.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1" fill="currentColor" stroke="none"/>'),
   crush: S('<rect x="5" y="5" width="5" height="5"/><rect x="14" y="5" width="5" height="5"/><rect x="5" y="14" width="5" height="5"/><rect x="14" y="14" width="5" height="5"/>'),

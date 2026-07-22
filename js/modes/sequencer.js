@@ -122,7 +122,7 @@ export function createSequencer(ctx) {
 
   function buildCode() {
     const bpm = ctx.getBpm();
-    const fx = djFxChain(st.dj); // effets Ultra DJ appliqués au motif final
+    const fx = djFxChain(st.dj, st.steps); // effets Ultra DJ appliqués au motif final
     if (st.songMode && st.scenes.length) {
       const cpm = (Math.round((bpm / 4) * 1000) / 1000);
       const parts = st.scenes.map((sc) => {
