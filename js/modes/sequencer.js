@@ -31,6 +31,7 @@ export function createSequencer(ctx) {
     // --- Sous-menu Feelings (émotions qui transforment la musique) ---
     feelOpen: false,
     mood: null,       // id de l'émotion active
+    morph: { a: 'joie', b: 'colere', t: 0 }, // fondu live entre deux émotions
   };
 
   let uid = 0;
@@ -424,6 +425,27 @@ export function createSequencer(ctx) {
     const controls = el('div', 'kz-feel');
     renderFeelingsPanel(controls, st.mood, (emo) => applyEmotion(emo));
     box.append(controls);
+
+    // Morphing : fondu live entre deux émotions.
+    const m = st.morph;
+    const A = findEmotion(m.a) || EMOTIONS[0], B = findEmotion(m.b) || EMOTIONS[1];
+    box.append(el('div', 'kz-song-sub', 'Morphing (fondu entre deux ambiances)'));
+    const ab = el('div', 'kz-morph-ab');
+    const chip = (which, emo) => {
+      const b = el('button', 'kz-morph-chip');
+      b.innerHTML = `<span class="kz-morph-ic">${icon(emo.icon)}</span><span>${emo.label}</span>`;
+      b.title = 'Changer d\'ambiance';
+      b.addEventListener('click', () => {
+        const idx = EMOTIONS.findIndex((e) => e.id === m[which]);
+        m[which] = EMOTIONS[(idx + 1) % EMOTIONS.length].id;
+        morphEmotions(m.a, m.b, m.t); render();
+      });
+      return b;
+    };
+    const arrow = el('span', 'kz-morph-arrow'); arrow.innerHTML = icon('reverse');
+    ab.append(chip('a', A), arrow, chip('b', B));
+    box.append(ab);
+    box.append(slider(`${A.label} ⟷ ${B.label}`, m.t, (v) => { m.t = v; morphEmotions(m.a, m.b, v); }, { format: (v) => Math.round(v * 100) + '%' }));
     return box;
   }
 
@@ -477,6 +499,34 @@ export function createSequencer(ctx) {
     st.mood = emo.id;
     render(); changed(); recordNow();
     toast(emo.label + ' ' + '🎛️');
+  }
+
+  // Morph live entre deux émotions : interpole tempo + effets, bascule la gamme
+  // à mi-parcours. Ne régénère PAS les notes/beats (fondu de "feel", pas de saut).
+  function morphEmotions(aId, bId, t) {
+    const A = findEmotion(aId), B = findEmotion(bId);
+    if (!A || !B) return;
+    st.mood = null;
+    // Gamme : bascule au milieu (la mélodie se re-mappe à la nouvelle gamme).
+    const scale = t < 0.5 ? A.scale : B.scale;
+    if (scale !== st.scale) {
+      st.scale = scale;
+      if (st.melo) st.melo.noteRows = buildNoteRows(st.scale, st.melo.octaves, st.melo.base);
+      if (st.bass) st.bass.noteRows = buildNoteRows(st.scale, 1, 2);
+    }
+    // Effets : interpolation des champs continus des deux ambiances.
+    const da = { ...defaultDjState(), ...A.dj }, db = { ...defaultDjState(), ...B.dj };
+    const L = (k) => (da[k] ?? 0) + ((db[k] ?? 0) - (da[k] ?? 0)) * t;
+    const cur = st.dj;
+    cur.filterOn = !!(da.filterOn || db.filterOn);
+    cur.cutoff = L('cutoff'); cur.res = L('res');
+    cur.room = L('room'); cur.delay = L('delay'); cur.crush = L('crush'); cur.coarse = L('coarse'); cur.vowel = L('vowel');
+    cur.autowah = t < 0.5 ? da.autowah : db.autowah;
+    cur.phaser = t < 0.5 ? da.phaser : db.phaser;
+    // Tempo : fondu fluide (phase préservée).
+    const bpm = Math.round(A.bpm + (B.bpm - A.bpm) * t);
+    if (ctx.setBpm) ctx.setBpm(bpm, true); else changed();
+    scheduleRecord();
   }
 
   // --- Dessin -> son : mappe le tracé sur les pistes ---

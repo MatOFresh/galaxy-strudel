@@ -344,14 +344,22 @@ function buildHome() {
 }
 
 // Change le tempo depuis n'importe quel mode (ex : Feelings) + resync UI/curseur.
-function setBpm(v) {
+// keepPhase : conserve la position de lecture (morph fluide, pas de saut du curseur).
+function setBpm(v, keepPhase) {
+  const oldCps = app.transport.cps;
   app.bpm = Math.max(60, Math.min(180, Math.round(v)));
   const tempo = $('kz-tempo');
   if (tempo) tempo.value = app.bpm;
   const lbl = $('kz-tempo-val');
   if (lbl) lbl.textContent = app.bpm + ' BPM';
   app.transport.cps = app.bpm / 240;
-  app.transport.startTime = getAudioTime();
+  if (keepPhase && app.transport.cps) {
+    const now = getAudioTime();
+    const elapsed = (now - app.transport.startTime) * oldCps;   // cycles écoulés
+    app.transport.startTime = now - elapsed / app.transport.cps; // même position, nouveau tempo
+  } else {
+    app.transport.startTime = getAudioTime();
+  }
   requestPlay();
 }
 

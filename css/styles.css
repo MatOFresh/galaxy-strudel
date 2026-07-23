@@ -539,6 +539,17 @@ body { font-family: var(--mono); letter-spacing: .005em; }
 .kz-feel-lbl { font-family: var(--mono); font-weight: 700; font-size: .74rem; letter-spacing: .02em; }
 .kz-feel-btn.on { border-color: var(--amber); background: rgba(255,122,44,.16); box-shadow: 0 0 18px rgba(255,122,44,.4); color: var(--amber-lo); }
 @media (max-width: 380px) { .kz-feel-grid { grid-template-columns: repeat(3, 1fr); } }
+/* Morphing entre deux émotions */
+.kz-morph-ab { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.kz-morph-chip {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1.5px solid var(--panel-b); background: var(--panel); color: var(--txt);
+  border-radius: 12px; padding: 11px 8px; font-family: var(--mono); font-weight: 700; font-size: .86rem;
+}
+.kz-morph-chip:active { transform: scale(.95); }
+.kz-morph-ic .ic { width: 1.25rem; height: 1.25rem; }
+.kz-morph-arrow { flex: none; color: var(--txt-dim); display: inline-flex; }
+.kz-morph-arrow .ic { width: 1.1rem; height: 1.1rem; }
 
 /* ---------- POLISH STYLE APPLE ---------- */
 /* Typo : tracking négatif sur les grands titres, matériaux translucides,
