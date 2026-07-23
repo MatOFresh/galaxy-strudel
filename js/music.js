@@ -65,9 +65,11 @@ export function meloGridToMini(soundName, noteRows, cells) {
 }
 
 // Assemble plusieurs patterns dans un stack, avec tempo.
-export function assemble(patterns, bpm) {
+// barsPerLoop : nombre de mesures que dure un loop (1 normal, 4 en DJ Légendaire
+// -> le cycle Strudel s'étire, donc le loop joue 4x plus longtemps).
+export function assemble(patterns, bpm, barsPerLoop = 1) {
   const clean = patterns.filter(Boolean);
-  const cpm = num((bpm || 110) / 4); // 1 cycle = 1 mesure 4/4
+  const cpm = num((bpm || 110) / (4 * (barsPerLoop || 1))); // 1 cycle = barsPerLoop mesure(s)
   if (!clean.length) return `setcpm(${cpm})\nsilence`;
   return `setcpm(${cpm})\nstack(\n  ${clean.join(',\n  ')}\n)`;
 }

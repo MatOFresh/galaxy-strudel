@@ -2,19 +2,25 @@
 import { startVisuals } from './visuals.js';
 import { ensureStrudel, play, stop, isPlaying, readLevels } from './strudel-engine.js';
 import { createSequencer } from './modes/sequencer.js';
-import { createPads } from './modes/pads.js';
 import { openVisualizer } from './visualizer.js';
 import { icon } from './icons.js';
 import { el, toast, slider } from './ui.js';
 
 const MODES = {
   sequencer: { title: 'Séquenceur', emoji: 'grid', desc: 'Une grille par instrument + Ultra DJ pour triturer le son.', factory: createSequencer },
-  pads: { title: 'Pads', emoji: 'pads', desc: 'Des pads à lancer comme un Launchpad.', factory: createPads },
+};
+
+// Niveaux : Facile (simple), Expert, DJ Légendaire (expert + loops x4 plus longs).
+const LEVEL_META = {
+  simple: { label: 'Facile', icon: 'robot' },
+  expert: { label: 'Expert', icon: 'cpu' },
+  legend: { label: 'DJ Légendaire', icon: 'crown' },
 };
 
 const app = {
   level: 'simple',
   bpm: 110,
+  barsPerLoop: 1,   // Facile/Expert = 1 mesure/loop ; DJ Légendaire = 4 (loops x4 plus longs)
   modeKey: null,
   mode: null,
   quantize: true,   // lancement quantifié : les changements "launch" tombent sur la mesure
@@ -281,8 +287,9 @@ function tickLoop() {
     if (fab) fab.style.setProperty('--beat', level.toFixed(3)); // pulsation du FAB sur le son
     if (app.mode && app.mode.highlight) {
       const steps = app.mode.stepsCount ? app.mode.stepsCount() : 16;
-      const cycles = (getAudioTime() - app.transport.startTime) * app.transport.cps;
-      const step = ((Math.floor(cycles * steps) % steps) + steps) % steps;
+      // 1 cycle transport = 1 mesure ; un loop dure barsPerLoop mesures.
+      const loops = (getAudioTime() - app.transport.startTime) * app.transport.cps / app.barsPerLoop;
+      const step = ((Math.floor(loops * steps) % steps) + steps) % steps;
       app.mode.highlight(step);
     }
   } else if (fab) {
@@ -308,6 +315,7 @@ function mountMode(key) {
     requestPlay,
     quantizeOn: () => app.quantize,
     timeToNextBar,
+    barsPerLoop: () => app.barsPerLoop,
     fxShot: triggerFxShot,
     fxShots: FX_SHOT_LIST,
     registerBuildCode: () => {},
@@ -365,6 +373,7 @@ function setBpm(v, keepPhase) {
 
 function setLevel(level) {
   app.level = level;
+  app.barsPerLoop = level === 'legend' ? 4 : 1;  // Légendaire : loops 4x plus longs
   syncLevelButtons();
   if (app.mode && app.mode.onLevelChange) { app.mode.onLevelChange(level); requestPlay(); }
 }
@@ -395,11 +404,11 @@ function init() {
   updateSync();
   updatePlayBtn();
 
-  // Boutons niveau (présents sur accueil + studio) : robot = simple, cpu = expert
+  // Boutons niveau (accueil + studio) : Facile / Expert / DJ Légendaire.
   document.querySelectorAll('[data-level]').forEach((b) => {
     const big = b.closest('.kz-level-switch.big');
-    const lbl = b.dataset.level === 'simple' ? 'Simple' : 'Expert';
-    b.innerHTML = icon(b.dataset.level === 'simple' ? 'robot' : 'cpu') + (big ? ' <span class="kz-lvl-txt">' + lbl + '</span>' : '');
+    const m = LEVEL_META[b.dataset.level] || LEVEL_META.simple;
+    b.innerHTML = icon(m.icon) + (big ? ' <span class="kz-lvl-txt">' + m.label + '</span>' : '');
     b.addEventListener('click', () => setLevel(b.dataset.level));
   });
 

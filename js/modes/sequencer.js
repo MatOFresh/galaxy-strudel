@@ -13,7 +13,7 @@ import { icon } from '../icons.js';
 export function createSequencer(ctx) {
   // --- État ---
   const st = {
-    steps: ctx.getLevel() === 'simple' ? 8 : 16,
+    steps: ctx.getLevel() === 'simple' ? 8 : ctx.getLevel() === 'legend' ? 32 : 16,
     scale: 'Mineure cool',
     octaves: ctx.getLevel() === 'simple' ? 1 : 2,
     drums: [],   // { id, soundId, cells:[bool], gain, muted, fx:{} }
@@ -79,7 +79,7 @@ export function createSequencer(ctx) {
     // garantit au moins 3 notes pour que ça sonne
     let placed = st.melo.cells.filter((c) => c != null).length;
     while (placed < 3) { const i = Math.floor(Math.random() * st.steps); if (st.melo.cells[i] == null) { st.melo.cells[i] = Math.floor(Math.random() * rows.length); placed++; } }
-    if (ctx.getLevel() === 'expert') {
+    if (ctx.getLevel() !== 'simple') {
       st.bass = makeMelo('jvbass');
       st.bass.octaves = 1; st.bass.base = 2;
       st.bass.noteRows = buildNoteRows(st.scale, 1, 2);
@@ -153,27 +153,32 @@ export function createSequencer(ctx) {
     pats.push('s("cr ~ ~ ~ ~ ~ ~ ~").gain(0.6)');
     return stackStr(pats);
   }
-  // Le Break = montée automatique : filtre qui s'ouvre + roulement de caisse
-  // qui accélère + riser, puis ça explose sur le Drop juste après.
-  function breakStackStr(bars) {
+  // Le Break = montée automatique qui GARDE toutes tes pistes et AJOUTE par
+  // dessus : un filtre qui s'ouvre + un roulement de clap qui accélère + un
+  // riser. Rien n'est effacé, ça monte en tension puis explose sur le Drop.
+  function breakStackStr(snap, bars) {
     const b = bars || 4;
-    return `stack(\n    s("bd ~ ~ ~"),\n    s("cp*<2 4 8 16>").gain(0.5),\n    s("wind").slow(${b}).gain(0.45)\n  ).lpf(saw.range(500,11000).slow(${b}))`;
+    const pats = patternsOf(snap);                    // toutes les pistes de l'utilisateur
+    pats.push('s("cp*<2 4 8 16>").gain(0.45)');        // roulement qui accélère
+    pats.push(`s("wind").slow(${b}).gain(0.4)`);       // riser (vent)
+    return stackStr(pats) + `.lpf(saw.range(700,13000).slow(${b}))`; // le filtre s'ouvre
   }
 
   function buildCode() {
     const bpm = ctx.getBpm();
+    const bpl = (ctx.barsPerLoop ? ctx.barsPerLoop() : 1) || 1; // 4 en DJ Légendaire
     const fx = djFxChain(st.dj, st.steps); // effets Ultra DJ appliqués au motif final
     if (st.songMode && st.scenes.length) {
-      const cpm = (Math.round((bpm / 4) * 1000) / 1000);
+      const cpm = (Math.round((bpm / (4 * bpl)) * 1000) / 1000);
       const parts = st.scenes.map((sc) => {
-        const body = sc.kind === 'break' ? breakStackStr(sc.bars)
+        const body = sc.kind === 'break' ? breakStackStr(sc.snap, sc.bars)
           : sc.kind === 'drop' ? dropStackStr(sc.snap)
             : stackStr(patternsOf(sc.snap));
         return `[${sc.bars}, ${body}]`;
       });
       return `setcpm(${cpm})\narrange(\n  ${parts.join(',\n  ')}\n)${fx}`;
     }
-    return assemble(patternsOf(st), bpm) + fx;
+    return assemble(patternsOf(st), bpm, bpl) + fx;
   }
   ctx.registerBuildCode(buildCode);
 
@@ -242,7 +247,7 @@ export function createSequencer(ctx) {
       render(); changed();
       toast('Ta voix joue la mélodie 🎤');
     }), 'small'));
-    if (level === 'expert') {
+    if (level !== 'simple') {
       // sélecteur de gamme
       const scaleSel = el('select', 'kz-select');
       Object.keys(SCALES).forEach((s) => {
@@ -251,9 +256,10 @@ export function createSequencer(ctx) {
       scaleSel.addEventListener('change', () => { st.scale = scaleSel.value; rebuildScales(); render(); changed(); });
       const sl = el('label', 'kz-inline-label'); sl.innerHTML = icon('scale'); sl.append(scaleSel);
       tools.append(sl);
-      // nombre de pas
+      // nombre de pas (Légendaire : loops plus longs -> plus de pas dispo)
       const stepSel = el('select', 'kz-select');
-      [8, 16].forEach((n) => { const o = el('option', null, n + ' pas'); o.value = n; if (n === st.steps) o.selected = true; stepSel.append(o); });
+      const stepOpts = level === 'legend' ? [16, 32, 64] : [8, 16];
+      stepOpts.forEach((n) => { const o = el('option', null, n + ' pas'); o.value = n; if (n === st.steps) o.selected = true; stepSel.append(o); });
       stepSel.addEventListener('change', () => { st.steps = +stepSel.value; resizeTracks(); render(); changed(); });
       tools.append(stepSel);
       tools.append(iconButton(icon('plus'), 'Instrument', () => addDrumTrack(), 'small'));
@@ -292,7 +298,7 @@ export function createSequencer(ctx) {
     pick.innerHTML = `<span class="kz-emoji">${snd ? icon(snd.emoji) : icon('gain')}</span><span>${snd ? snd.label : d.soundId}</span>`;
     pick.addEventListener('click', () => openSoundLibrary((s) => { d.soundId = s.id; render(); changed(); }, 'drum', { used: usedDrumIds(d) }));
     head.append(pick);
-    if (level === 'expert') {
+    if (level !== 'simple') {
       const mute = el('button', 'kz-mini' + (d.muted ? ' on' : '')); mute.innerHTML = icon(d.muted ? 'mute' : 'gain');
       mute.addEventListener('click', () => { d.muted = !d.muted; render(); changed(); });
       head.append(mute);
@@ -322,7 +328,7 @@ export function createSequencer(ctx) {
     addDancer(cells);
     row.append(cells);
 
-    if (level === 'expert') row.append(renderFxRow(d));
+    if (level !== 'simple') row.append(renderFxRow(d));
     return row;
   }
 
@@ -334,7 +340,7 @@ export function createSequencer(ctx) {
     pick.innerHTML = `<span class="kz-emoji">${snd ? icon(snd.emoji) : icon('synth')}</span><span>${title}</span>`;
     pick.addEventListener('click', () => openSoundLibrary((s) => { m.soundId = s.id; render(); changed(); }, 'melo'));
     head.append(pick);
-    if (level === 'expert') {
+    if (level !== 'simple') {
       const mute = el('button', 'kz-mini' + (m.muted ? ' on' : '')); mute.innerHTML = icon(m.muted ? 'mute' : 'gain');
       mute.addEventListener('click', () => { m.muted = !m.muted; render(); changed(); });
       head.append(mute);
@@ -364,7 +370,7 @@ export function createSequencer(ctx) {
     });
     addDancer(gridEl);
     wrap.append(gridEl);
-    if (level === 'expert') wrap.append(renderFxRow(m));
+    if (level !== 'simple') wrap.append(renderFxRow(m));
     return wrap;
   }
 
@@ -626,7 +632,7 @@ export function createSequencer(ctx) {
     regenMelodyShaped(R.mel);
 
     // Basse (Expert) : son de basse du genre, fondamentale sur le motif.
-    if (ctx.getLevel() === 'expert') {
+    if (ctx.getLevel() !== 'simple') {
       const bassSnd = pickSound({ emoji: 'bass', type: 'melo', vibe: id }) || pickSound({ emoji: 'bass', type: 'melo' });
       st.bass = makeMelo(bassSnd ? bassSnd.id : 'jvbass');
       st.bass.octaves = 1; st.bass.base = 2;
@@ -810,9 +816,10 @@ export function createSequencer(ctx) {
     onQuantizedFire() { st.pending = null; root.querySelectorAll('.kz-loop-row.pending').forEach((e) => e.classList.remove('pending')); },
     stepsCount: () => st.steps,
     onLevelChange(level) {
-      st.steps = level === 'simple' ? 8 : 16;
+      st.steps = level === 'simple' ? 8 : level === 'legend' ? 32 : 16;
       st.octaves = level === 'simple' ? 1 : 2;
-      if (level === 'expert' && !st.bass) { /* laissé optionnel */ }
+      // en montant de niveau, on ajoute une basse si elle manque (Expert/Légendaire)
+      if (level !== 'simple' && !st.bass) { st.bass = makeMelo('jvbass'); st.bass.octaves = 1; st.bass.base = 2; st.bass.noteRows = buildNoteRows(st.scale, 1, 2); }
       resizeTracks();
       if (st.melo) { st.melo.noteRows = buildNoteRows(st.scale, st.octaves, 3); }
       render();

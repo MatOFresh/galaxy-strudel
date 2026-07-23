@@ -21,6 +21,7 @@ const I = {
   // --- robot / niveaux ---
   robot: S('<rect x="5" y="8" width="14" height="10" rx="2"/><path d="M12 4v4"/><circle cx="12" cy="4" r="1.4"/><path d="M9.5 12.5h.01M14.5 12.5h.01M9 16h6"/>'),
   cpu: S('<rect x="7" y="7" width="10" height="10" rx="1.5"/><rect x="10.5" y="10.5" width="3" height="3"/><path d="M9.5 4v3M14.5 4v3M9.5 17v3M14.5 17v3M4 9.5h3M4 14.5h3M17 9.5h3M17 14.5h3"/>'),
+  crown: S('<path d="M4 18h16M4 18l-1.2-9 5.2 4 4-7 4 7 5.2-4L20 18" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>'),
   // --- modes ---
   grid: S('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 12h18M9 5v14M15 5v14"/>'),
   pads: S('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'),
