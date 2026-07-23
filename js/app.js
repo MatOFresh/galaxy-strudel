@@ -18,6 +18,7 @@ const app = {
   modeKey: null,
   mode: null,
   quantize: true,   // lancement quantifié : les changements "launch" tombent sur la mesure
+  metronome: false, // clic de métronome par-dessus le mix (aide au calage)
   // Tranche master (bus global) : volume + filtre + limiteur anti-saturation.
   master: { vol: 0.85, filter: 0.5, limiter: true, limiterOk: true }, // filter .5 = off
   transport: { playing: false, startTime: 0, cps: 110 / 240 },
@@ -43,11 +44,18 @@ function masterFxStr(withLimiter) {
   return fx;
 }
 function useLimiter() { return app.master.limiter && app.master.limiterOk !== false; }
-// Code complet joué = motif du mode + tranche master.
-function fullCode() {
+// Code complet joué = (motif du mode + tranche master) [+ métronome par-dessus].
+// On sépare la ligne setcpm(...) du motif pour pouvoir empiler le clic SANS le
+// faire passer par le filtre master (sinon on perdrait le clic en filtrant).
+function composeCode(withLimiter) {
   const base = (app.mode && app.mode.buildCode) ? app.mode.buildCode() : 'silence';
-  return base + masterFxStr(useLimiter());
+  const nl = base.indexOf('\n');
+  const prefix = nl >= 0 ? base.slice(0, nl + 1) : '';
+  let pat = (nl >= 0 ? base.slice(nl + 1) : base) + masterFxStr(withLimiter);
+  if (app.metronome) pat = `stack(${pat}, s("click*4").gain(0.35))`;
+  return prefix + pat;
 }
+function fullCode() { return composeCode(useLimiter()); }
 
 // ---- Lecture ----
 async function doPlay() {
@@ -59,8 +67,8 @@ async function doPlay() {
   // Essaie avec le master complet ; repli sans limiteur (si compressor indispo),
   // puis motif brut : la lecture ne casse jamais à cause de la tranche master.
   const lim = useLimiter();
-  let res = await play(base + masterFxStr(lim));
-  if (!res.ok && lim) { app.master.limiterOk = false; res = await play(base + masterFxStr(false)); }
+  let res = await play(composeCode(lim));
+  if (!res.ok && lim) { app.master.limiterOk = false; res = await play(composeCode(false)); }
   if (!res.ok) res = await play(base);
   if (!res.ok) { app.transport.playing = wasPlaying; updatePlayBtn(); toast('Oups, réessaie 🎧'); return; }
   if (!wasPlaying) app.transport.startTime = getAudioTime();
@@ -117,6 +125,62 @@ function highlightStrudel(code) {
   h = h.replace(/\b([a-zA-Z_]\w*)(\()/g, '<span class="f">$1</span>$2'); // fonctions
   return h;
 }
+// ---- Panneau Tempo : tap tempo + nudge + métronome ----
+function openTempoPanel() {
+  if (document.querySelector('.kz-tempo-overlay')) return;
+  const overlay = el('div', 'kz-tempo-overlay kz-master-overlay');
+  const panel = el('div', 'kz-master-panel');
+  const head = el('div', 'kz-master-head');
+  const title = el('span', 'kz-master-title'); title.innerHTML = `${icon('metro')} Tempo`;
+  const close = el('button', 'kz-code-btn2'); close.innerHTML = icon('close');
+  head.append(title, close);
+  panel.append(head);
+
+  const big = el('div', 'kz-tempo-big');
+  const readout = () => { big.textContent = app.bpm + ' BPM'; };
+  readout();
+  panel.append(big);
+
+  // TAP TEMPO : tape en rythme, on moyenne les intervalles.
+  const tap = el('button', 'kz-tap-btn'); tap.innerHTML = `${icon('tap')} TAP`;
+  let taps = [];
+  tap.addEventListener('click', () => {
+    const now = performance.now();
+    if (taps.length && now - taps[taps.length - 1] > 2000) taps = []; // nouvelle série
+    taps.push(now);
+    tap.classList.remove('hit'); void tap.offsetWidth; tap.classList.add('hit');
+    if (taps.length >= 2) {
+      const r = taps.slice(-5);
+      let s = 0; for (let i = 1; i < r.length; i++) s += r[i] - r[i - 1];
+      const bpm = Math.round(60000 / (s / (r.length - 1)));
+      setBpm(bpm); readout();
+    }
+  });
+  panel.append(tap);
+
+  // Nudge fin (± 1 BPM)
+  const nudge = el('div', 'kz-nudge');
+  const minus = el('button', 'kz-chip'); minus.textContent = '−1';
+  minus.addEventListener('click', () => { setBpm(app.bpm - 1); readout(); });
+  const plus = el('button', 'kz-chip'); plus.textContent = '+1';
+  plus.addEventListener('click', () => { setBpm(app.bpm + 1); readout(); });
+  nudge.append(minus, el('span', 'kz-nudge-lbl', 'ajuste finement'), plus);
+  panel.append(nudge);
+
+  // Métronome
+  const row = el('div', 'kz-master-row');
+  const metro = el('button', 'kz-chip' + (app.metronome ? ' on' : '')); metro.innerHTML = `${icon('metro')} Métronome`;
+  metro.title = 'Un clic sur chaque temps pour se caler';
+  metro.addEventListener('click', () => { app.metronome = !app.metronome; metro.classList.toggle('on', app.metronome); requestPlay(); });
+  row.append(metro);
+  panel.append(row);
+
+  overlay.append(panel);
+  document.body.append(overlay);
+  close.addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
 // ---- Panneau Master : volume + filtre + limiteur, accessible partout ----
 function openMasterPanel() {
   if (document.querySelector('.kz-master-overlay')) return;
@@ -309,6 +373,8 @@ function init() {
 
   const tempo = $('kz-tempo');
   tempo.addEventListener('input', () => setBpm(+tempo.value));
+  // La pastille BPM ouvre le panneau Tempo (tap / nudge / métronome).
+  $('kz-tempo-val').addEventListener('click', openTempoPanel);
 
   requestAnimationFrame(tickLoop);
 

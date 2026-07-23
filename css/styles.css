@@ -142,7 +142,26 @@ button { font-family: inherit; cursor: pointer; color: var(--txt); }
 .kz-play .ic { width: 1.7rem; height: 1.7rem; }
 .kz-play:active { transform: scale(.9); }
 .kz-tempo-wrap { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.kz-tempo-val { color: var(--txt-dim); font-size: .78rem; font-weight: 700; }
+.kz-tempo-val {
+  color: var(--txt-dim); font-size: .78rem; font-weight: 700; align-self: flex-start;
+  background: rgba(255,255,255,.05); border: 1px solid var(--panel-b); border-radius: 8px;
+  padding: 3px 9px; cursor: pointer; font-family: var(--mono);
+}
+.kz-tempo-val:hover, .kz-tempo-val:active { color: var(--ice); border-color: color-mix(in srgb, var(--ice) 40%, transparent); }
+/* ---------- PANNEAU TEMPO (tap / nudge / métronome) ---------- */
+.kz-tempo-big { text-align: center; font-family: var(--display); font-weight: 800; font-size: 2.2rem; color: var(--ice); letter-spacing: -.01em; }
+.kz-tap-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  border: 1.5px solid var(--panel-b); background: rgba(87,209,255,.08); color: var(--txt);
+  font-family: var(--mono); font-weight: 800; letter-spacing: .12em; padding: 22px; border-radius: 16px; font-size: 1.15rem;
+}
+.kz-tap-btn .ic { width: 1.5rem; height: 1.5rem; color: var(--ice); }
+.kz-tap-btn.hit { animation: kz-tap .18s ease; }
+@keyframes kz-tap { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(87,209,255,.5); } 50% { transform: scale(.97); box-shadow: 0 0 0 8px rgba(87,209,255,0); } 100% { transform: scale(1); } }
+.kz-nudge { display: flex; align-items: center; gap: 10px; }
+.kz-nudge .kz-chip { min-width: 58px; justify-content: center; font-size: 1.05rem; font-weight: 800; }
+.kz-nudge-lbl { flex: 1; text-align: center; color: var(--txt-dim); font-size: .8rem; }
+@media (prefers-reduced-motion: reduce) { .kz-tap-btn.hit { animation: none; } }
 
 /* ---------- SÉQUENCEUR ---------- */
 .kz-seq-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }

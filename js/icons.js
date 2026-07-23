@@ -35,6 +35,8 @@ const I = {
   loop: S('<path d="M5 9a5 5 0 015-5h5M19 15a5 5 0 01-5 5H9"/><path d="M15 1l3 3-3 3M9 23l-3-3 3-3"/>'),
   sync: S('<path d="M20 11a8 8 0 00-14-4M4 13a8 8 0 0014 4"/><path d="M18 3v4h-4M6 21v-4h4"/>'),
   master: S('<path d="M6 3v18M12 3v18M18 3v18"/><rect x="3.5" y="13" width="5" height="3.4" rx="1" fill="currentColor" stroke="none"/><rect x="9.5" y="7" width="5" height="3.4" rx="1" fill="currentColor" stroke="none"/><rect x="15.5" y="10" width="5" height="3.4" rx="1" fill="currentColor" stroke="none"/>'),
+  metro: S('<path d="M9 3.5h6l3.2 17H5.8z"/><path d="M12 20V9"/><path d="M12 9l4.5-3"/>'),
+  tap: S('<circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/><path d="M6.5 6.5a8 8 0 000 11M17.5 6.5a8 8 0 010 11"/>'),
   burst: S('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M18 6l-2.5 2.5M8.5 15.5L6 18"/>'),
   drop: S('<path d="M13 3L5 13h5l-1 8 9-12h-6z"/>', true),
   // --- effets DJ / fx ---
