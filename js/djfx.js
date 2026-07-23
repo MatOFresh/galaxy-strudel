@@ -14,6 +14,7 @@ export function defaultDjState() {
     reverse: false, autowah: false, phaser: false,
     vowel: 0,         // 0 = off, sinon A/E/I/O/U
     swing: 0,         // 0 = droit, jusqu'à ~triolet (groove)
+    sidechain: 0,     // 0 = off ; "pompe" (ducking mélodie/basse sous le kick)
   };
 }
 
@@ -47,9 +48,20 @@ export function djFxChain(dj, steps = 16) {
   return fx;
 }
 
+// Suffixe "pompe" (sidechain émulé) à coller sur les pistes tenues (mélodie /
+// basse). Un LFO de gain en dents de scie, calé sur le tempo (4 dips/mesure) :
+// le gain plonge sur le temps puis remonte -> l'effet de "respiration" sous le
+// kick. Renvoie '' si off.
+export function pumpTail(sidechain) {
+  if (!sidechain || sidechain < 0.01) return '';
+  const min = num(1 - sidechain * 0.88);   // 1 (off) -> ~0.12 (pompe forte)
+  return `.gain(saw.range(${min}, 1).fast(4))`;
+}
+
 export function djIsActive(dj) {
   return !!(dj && (dj.filterOn || dj.autowah || dj.reverse || dj.chop || dj.phaser || dj.vowel > 0
-    || dj.time !== 'normal' || dj.room > 0.03 || dj.delay > 0.03 || dj.crush > 0.03 || dj.coarse > 0.03 || dj.swing > 0.02));
+    || dj.time !== 'normal' || dj.room > 0.03 || dj.delay > 0.03 || dj.crush > 0.03 || dj.coarse > 0.03
+    || dj.swing > 0.02 || dj.sidechain > 0.02));
 }
 
 // Construit les contrôles DJ dans `container`. onChange() = ré-évaluation (live).
@@ -60,6 +72,8 @@ export function renderDjControls(container, dj, onChange) {
 
     // Swing / Groove : contrôle de feel en tête (le nerf du groove).
     container.append(slider(`${icon('swing')} Swing / Groove`, dj.swing, (v) => { dj.swing = v; onChange(); }, { format: (v) => (v < 0.01 ? 'droit' : Math.round(v * 100) + '%') }));
+    // Sidechain / Pompe : la mélodie et la basse "respirent" sous le kick.
+    container.append(slider(`${icon('pump')} Sidechain / Pompe`, dj.sidechain, (v) => { dj.sidechain = v; onChange(); }, { format: (v) => (v < 0.01 ? 'off' : Math.round(v * 100) + '%') }));
 
     // Pad XY filtre
     const padWrap = el('div', 'dj-padwrap');

@@ -5,7 +5,7 @@ import { openVoiceStudio } from '../voice.js';
 import { openDrawStudio } from '../draw.js';
 import { EMOTIONS, findEmotion, renderFeelingsPanel } from '../feelings.js';
 import { SCALES, buildNoteRows, drumRowToMini, meloGridToMini, fxChain, assemble } from '../music.js';
-import { defaultDjState, djFxChain, djIsActive, renderDjControls } from '../djfx.js';
+import { defaultDjState, djFxChain, djIsActive, renderDjControls, pumpTail } from '../djfx.js';
 import { icon } from '../icons.js';
 
 export function createSequencer(ctx) {
@@ -95,11 +95,12 @@ export function createSequencer(ctx) {
       const name = snd ? snd.name : d.soundId;
       pats.push(drumRowToMini(name, d.cells) + fxChain({ gain: d.gain, ...d.fx }));
     });
+    const pump = pumpTail(st.dj.sidechain); // "pompe" appliquée aux pistes tenues
     [src.melo, src.bass].forEach((m) => {
       if (!m || m.muted || !m.cells.some((c) => c != null)) return;
       const snd = findSound(m.soundId);
       const name = snd ? snd.name : m.soundId;
-      pats.push(meloGridToMini(name, m.noteRows, m.cells) + fxChain({ gain: m.gain, ...m.fx }));
+      pats.push(meloGridToMini(name, m.noteRows, m.cells) + fxChain({ gain: m.gain, ...m.fx }) + pump);
     });
     return pats;
   }
