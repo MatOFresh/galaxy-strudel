@@ -518,6 +518,19 @@ export function createSequencer(ctx) {
     auto.addEventListener('click', () => autoBreakDrop());
     acts.append(auto);
     box.append(acts);
+
+    // Effets live : one-shots de transition (riser, impact, reverse, tape-stop).
+    if (ctx.fxShots && ctx.fxShots.length) {
+      box.append(el('div', 'kz-song-sub', 'Effets live (juste avant le drop)'));
+      const fxRow = el('div', 'kz-fxshots');
+      ctx.fxShots.forEach((f) => {
+        const b = el('button', 'kz-fxshot');
+        b.innerHTML = `<span class="kz-emoji">${icon(f.icon)}</span><span>${f.label}</span>`;
+        b.addEventListener('click', () => { b.classList.remove('fire'); void b.offsetWidth; b.classList.add('fire'); ctx.fxShot(f.id); });
+        fxRow.append(b);
+      });
+      box.append(fxRow);
+    }
     return box;
   }
 

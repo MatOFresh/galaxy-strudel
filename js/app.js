@@ -44,6 +44,27 @@ function masterFxStr(withLimiter) {
   return fx;
 }
 function useLimiter() { return app.master.limiter && app.master.limiterOk !== false; }
+
+// FX one-shots performables (transitions de DJ). `layer` = motif empilé sur le
+// mix ; `mixfx` = effet appliqué au mix entier (ex : tape-stop). `bars` = durée
+// avant retour automatique à la normale.
+const FX_SHOTS = {
+  riser: { label: 'Riser', icon: 'burst', bars: 2, layer: 's("wind").slow(2).gain(0.5).lpf(saw.range(500,11000).slow(2))' },
+  impact: { label: 'Impact', icon: 'drop', bars: 1, layer: 's("bd").gain(1.1).lpf(500).room(0.8)' },
+  reverse: { label: 'Reverse', icon: 'reverse', bars: 1, layer: 's("cr").speed(-1).gain(0.6).room(0.35)' },
+  tapestop: { label: 'Tape-stop', icon: 'slow', bars: 1, mixfx: '.speed(saw.range(1,0.04))' },
+};
+const FX_SHOT_LIST = Object.entries(FX_SHOTS).map(([id, f]) => ({ id, label: f.label, icon: f.icon }));
+
+function triggerFxShot(kind) {
+  if (!app.transport.playing) { toast('Lance la musique d\'abord ▶︎'); return; }
+  if (!FX_SHOTS[kind]) return;
+  app.fxShot = kind;
+  doPlay();                                   // ré-évalue avec le one-shot (clock continu -> pas de saut)
+  if (app.fxTimer) clearTimeout(app.fxTimer);
+  const durMs = FX_SHOTS[kind].bars * (1000 / app.transport.cps); // 1 cycle = 1 mesure
+  app.fxTimer = setTimeout(() => { app.fxShot = null; app.fxTimer = null; if (app.transport.playing) doPlay(); }, durMs);
+}
 // Code complet joué = (motif du mode + tranche master) [+ métronome par-dessus].
 // On sépare la ligne setcpm(...) du motif pour pouvoir empiler le clic SANS le
 // faire passer par le filtre master (sinon on perdrait le clic en filtrant).
@@ -51,8 +72,12 @@ function composeCode(withLimiter) {
   const base = (app.mode && app.mode.buildCode) ? app.mode.buildCode() : 'silence';
   const nl = base.indexOf('\n');
   const prefix = nl >= 0 ? base.slice(0, nl + 1) : '';
-  let pat = (nl >= 0 ? base.slice(nl + 1) : base) + masterFxStr(withLimiter);
+  let mix = (nl >= 0 ? base.slice(nl + 1) : base);
+  const shot = app.fxShot ? FX_SHOTS[app.fxShot] : null;
+  if (shot && shot.mixfx) mix += shot.mixfx;                    // ex : tape-stop (ralenti global)
+  let pat = mix + masterFxStr(withLimiter);
   if (app.metronome) pat = `stack(${pat}, s("click*4").gain(0.35))`;
+  if (shot && shot.layer) pat = `stack(${pat}, ${shot.layer})`; // ex : riser / impact / reverse
   return prefix + pat;
 }
 function fullCode() { return composeCode(useLimiter()); }
@@ -77,6 +102,8 @@ async function doPlay() {
 
 function doStop() {
   if (quantTimer) { clearTimeout(quantTimer); quantTimer = null; }
+  if (app.fxTimer) { clearTimeout(app.fxTimer); app.fxTimer = null; }
+  app.fxShot = null;
   stop();
   app.transport.playing = false;
   updatePlayBtn();
@@ -281,6 +308,8 @@ function mountMode(key) {
     requestPlay,
     quantizeOn: () => app.quantize,
     timeToNextBar,
+    fxShot: triggerFxShot,
+    fxShots: FX_SHOT_LIST,
     registerBuildCode: () => {},
   };
   app.mode = MODES[key].factory(modeCtx);
