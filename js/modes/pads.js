@@ -60,7 +60,13 @@ export function createPads(ctx) {
         if (longPressed) { longPressed = false; return; }
         p.active = !p.active;
         b.classList.toggle('on', p.active);
-        changed();
+        // Lancement quantifié : le pad entre/sort sur la prochaine mesure.
+        if (ctx.isPlaying() && ctx.quantizeOn()) {
+          b.classList.add('pending');
+          ctx.requestPlay({ quantize: true });
+        } else {
+          changed();
+        }
       });
       if (level === 'expert') {
         b.addEventListener('contextmenu', (e) => { e.preventDefault(); editPad(p); });
@@ -101,6 +107,7 @@ export function createPads(ctx) {
   return {
     buildCode,
     highlight() {},
+    onQuantizedFire() { root.querySelectorAll('.kz-pad.pending').forEach((e) => e.classList.remove('pending')); },
     onLevelChange() { render(); },
     init() { render(); },
     destroy() { root.innerHTML = ''; },

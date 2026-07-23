@@ -22,6 +22,7 @@ export function createSequencer(ctx) {
     scenes: [],       // { kind:'loop'|'break'|'drop', bars, snap }
     songMode: false,  // true = joue le morceau (arrange), false = joue la boucle courante
     editing: null,    // index de la scène en cours d'édition dans la grille, ou null
+    pending: null,    // index du loop lancé, en attente de la prochaine mesure (quantize)
     dropSnap: null,   // snapshot figé comme "le Drop"
     // --- Sous-menu Ultra DJ (effets live sur le beat) ---
     dj: defaultDjState(),
@@ -142,6 +143,10 @@ export function createSequencer(ctx) {
   const root = ctx.root;
 
   function changed() { ctx.requestPlay(); }
+  // Le changement doit-il être calé sur la mesure ? (Sync ON + en lecture)
+  function willQuantize() { return !!(ctx.isPlaying && ctx.isPlaying() && ctx.quantizeOn && ctx.quantizeOn()); }
+  // Lancement d'un loop / bascule de mode : quantifié si possible.
+  function launch() { ctx.requestPlay(willQuantize() ? { quantize: true } : undefined); }
 
   function render() {
     root.innerHTML = '';
@@ -465,7 +470,7 @@ export function createSequencer(ctx) {
     const toggle = el('button', 'kz-song-toggle' + (st.songMode ? ' on' : ''));
     toggle.innerHTML = st.songMode ? `${icon('song')} Morceau` : `${icon('loop')} Boucle`;
     toggle.title = st.songMode ? 'Joue tous les loops à la suite' : 'Joue seulement le loop courant en boucle';
-    toggle.addEventListener('click', () => { st.songMode = !st.songMode; render(); changed(); });
+    toggle.addEventListener('click', () => { st.songMode = !st.songMode; const q = willQuantize(); render(); ctx.requestPlay(q ? { quantize: true } : undefined); });
     head.append(toggle);
     box.append(head);
 
@@ -475,7 +480,7 @@ export function createSequencer(ctx) {
       const list = el('div', 'kz-loops');
       st.scenes.forEach((sc, i) => {
         const k = KIND[sc.kind] || KIND.loop;
-        const row = el('div', 'kz-loop-row k-' + sc.kind + (st.editing === i ? ' editing' : ''));
+        const row = el('div', 'kz-loop-row k-' + sc.kind + (st.editing === i ? ' editing' : '') + (st.pending === i ? ' pending' : ''));
         const main = el('button', 'kz-loop-main');
         main.innerHTML = `<span class="kz-loop-num">${i + 1}</span><span class="kz-loop-ic">${icon(k.e)}</span><span class="kz-loop-name">${k.l}</span>`;
         main.title = 'Éditer ce loop dans la grille';
@@ -542,7 +547,10 @@ export function createSequencer(ctx) {
     st.melo = snap.melo;
     st.bass = snap.bass;
     st.editing = i;
-    render(); changed();
+    const q = willQuantize();
+    st.pending = q ? i : null;        // le loop clignote jusqu'à son entrée sur la mesure
+    render();
+    ctx.requestPlay(q ? { quantize: true } : undefined);
   }
   function defineDrop() { st.dropSnap = snapshot(); render(); toast('🔥 Drop défini ! Fais "Break auto".'); }
   function autoBreakDrop() {
@@ -581,6 +589,8 @@ export function createSequencer(ctx) {
   return {
     buildCode,
     highlight,
+    // La mesure est tombée : le loop en attente est maintenant en jeu.
+    onQuantizedFire() { st.pending = null; root.querySelectorAll('.kz-loop-row.pending').forEach((e) => e.classList.remove('pending')); },
     stepsCount: () => st.steps,
     onLevelChange(level) {
       st.steps = level === 'simple' ? 8 : 16;

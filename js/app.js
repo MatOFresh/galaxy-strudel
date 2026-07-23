@@ -17,6 +17,7 @@ const app = {
   bpm: 110,
   modeKey: null,
   mode: null,
+  quantize: true,   // lancement quantifié : les changements "launch" tombent sur la mesure
   transport: { playing: false, startTime: 0, cps: 110 / 240 },
 };
 
@@ -40,9 +41,11 @@ async function doPlay() {
 }
 
 function doStop() {
+  if (quantTimer) { clearTimeout(quantTimer); quantTimer = null; }
   stop();
   app.transport.playing = false;
   updatePlayBtn();
+  if (app.mode && app.mode.onQuantizedFire) app.mode.onQuantizedFire();
 }
 
 function updatePlayBtn() {
@@ -52,7 +55,31 @@ function updatePlayBtn() {
   b.innerHTML = app.transport.playing ? icon('pause') : icon('play');
 }
 
-function requestPlay() { if (app.transport.playing) doPlay(); }
+// Secondes jusqu'au prochain début de mesure (1 cycle = 1 mesure).
+function timeToNextBar() {
+  const cyc = (getAudioTime() - app.transport.startTime) * app.transport.cps;
+  const frac = cyc - Math.floor(cyc);
+  return (1 - frac) / app.transport.cps;
+}
+
+let quantTimer = null;
+// requestPlay(opts) : par défaut ré-évalue tout de suite (édition en direct).
+// opts.quantize = true + Sync activé + en lecture -> diffère l'évaluation à la
+// prochaine mesure pour que le loop/pad entre pile sur le "1" (feel pro).
+function requestPlay(opts) {
+  if (!app.transport.playing) return;
+  if (opts && opts.quantize && app.quantize) {
+    if (quantTimer) return;                 // déjà programmé : l'état live sera lu au déclenchement
+    const ms = Math.max(0, timeToNextBar() * 1000 - 15); // ~15ms avant la barre pour caler le downbeat
+    quantTimer = setTimeout(() => {
+      quantTimer = null;
+      doPlay();
+      if (app.mode && app.mode.onQuantizedFire) app.mode.onQuantizedFire();
+    }, ms);
+    return;
+  }
+  doPlay();
+}
 
 // ---- Code Window : montre le code Strudel généré en direct ----
 function escHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -130,6 +157,8 @@ function mountMode(key) {
     isPlaying: () => app.transport.playing,
     getElapsedCycles: () => (app.transport.playing ? (getAudioTime() - app.transport.startTime) * app.transport.cps : -1),
     requestPlay,
+    quantizeOn: () => app.quantize,
+    timeToNextBar,
     registerBuildCode: () => {},
   };
   app.mode = MODES[key].factory(modeCtx);
@@ -197,6 +226,11 @@ function init() {
   $('kz-viz-btn').innerHTML = icon('kaleido');
   $('kz-code-btn').innerHTML = icon('code') + ' Code';
   $('kz-code-btn').addEventListener('click', openCodeWindow);
+  // Sync : lancement quantifié à la mesure (activé par défaut).
+  const syncBtn = $('kz-sync-btn');
+  const updateSync = () => { syncBtn.classList.toggle('on', app.quantize); syncBtn.innerHTML = icon('sync') + ' Sync'; };
+  syncBtn.addEventListener('click', () => { app.quantize = !app.quantize; updateSync(); toast(app.quantize ? 'Lancement calé sur la mesure' : 'Lancement immédiat'); });
+  updateSync();
   updatePlayBtn();
 
   // Boutons niveau (présents sur accueil + studio) : robot = simple, cpu = expert

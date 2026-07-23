@@ -382,6 +382,19 @@ body { font-family: var(--mono); letter-spacing: .005em; }
 }
 .kz-code-launch .ic { width: 1.15rem; height: 1.15rem; }
 .kz-code-launch:active { transform: scale(.94); }
+/* Bouton Sync (lancement quantifié) */
+.kz-sync-btn {
+  flex: none; border: 1px solid var(--panel-b); background: rgba(255,255,255,.05); color: var(--txt-dim);
+  font-family: var(--mono); font-size: .8rem; padding: 10px 12px; border-radius: 12px;
+  display: inline-flex; align-items: center; gap: .35em;
+}
+.kz-sync-btn .ic { width: 1.15rem; height: 1.15rem; }
+.kz-sync-btn:active { transform: scale(.94); }
+.kz-sync-btn.on { color: var(--ice); border-color: color-mix(in srgb, var(--ice) 45%, transparent); background: rgba(87,209,255,.14); box-shadow: 0 0 12px rgba(87,209,255,.3); }
+/* Loop / pad "en attente" de la prochaine mesure : clignote */
+.kz-loop-row.pending, .kz-pad.pending { animation: kz-pending .55s ease-in-out infinite; }
+@keyframes kz-pending { 0%,100% { box-shadow: 0 0 0 0 rgba(87,209,255,0); } 50% { box-shadow: 0 0 0 3px rgba(87,209,255,.55); } }
+@media (prefers-reduced-motion: reduce) { .kz-loop-row.pending, .kz-pad.pending { animation: none; outline: 2px dashed var(--ice); } }
 .kz-code-overlay {
   position: fixed; inset: 0; z-index: 150; background: rgba(3,4,6,.72);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
