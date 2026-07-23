@@ -5,7 +5,7 @@ import { createSequencer } from './modes/sequencer.js';
 import { createPads } from './modes/pads.js';
 import { openVisualizer } from './visualizer.js';
 import { icon } from './icons.js';
-import { el, toast } from './ui.js';
+import { el, toast, slider } from './ui.js';
 
 const MODES = {
   sequencer: { title: 'Séquenceur', emoji: 'grid', desc: 'Une grille par instrument + Ultra DJ pour triturer le son.', factory: createSequencer },
@@ -18,6 +18,8 @@ const app = {
   modeKey: null,
   mode: null,
   quantize: true,   // lancement quantifié : les changements "launch" tombent sur la mesure
+  // Tranche master (bus global) : volume + filtre + limiteur anti-saturation.
+  master: { vol: 0.85, filter: 0.5, limiter: true, limiterOk: true }, // filter .5 = off
   transport: { playing: false, startTime: 0, cps: 110 / 240 },
 };
 
@@ -27,14 +29,39 @@ function getAudioTime() {
   try { return window.getAudioContext ? window.getAudioContext().currentTime : 0; } catch { return 0; }
 }
 
+// ---- Bus master : suffixe d'effets appliqué à TOUT le mix (tous modes) ----
+function masterFxStr(withLimiter) {
+  const m = app.master;
+  let fx = '';
+  // Filtre master bipolaire : 0.5 = off ; à gauche ça ferme (passe-bas),
+  // à droite ça éclaircit (passe-haut). Zone morte au centre.
+  if (m.filter < 0.46) { const t = m.filter / 0.46; fx += `.lpf(${Math.round(130 + t * t * 6800)})`; }
+  else if (m.filter > 0.54) { const t = (m.filter - 0.54) / 0.46; fx += `.hpf(${Math.round(50 + t * t * 3800)})`; }
+  if (withLimiter) fx += '.compressor("-3:10:4:0.003:0.1")'; // limiteur de bus (anti-saturation)
+  const v = Math.round(m.vol * 1000) / 1000;
+  if (v !== 1) fx += `.gain(${v})`;
+  return fx;
+}
+function useLimiter() { return app.master.limiter && app.master.limiterOk !== false; }
+// Code complet joué = motif du mode + tranche master.
+function fullCode() {
+  const base = (app.mode && app.mode.buildCode) ? app.mode.buildCode() : 'silence';
+  return base + masterFxStr(useLimiter());
+}
+
 // ---- Lecture ----
 async function doPlay() {
   if (!app.mode) return;
-  const code = app.mode.buildCode();
+  const base = app.mode.buildCode();
   const wasPlaying = app.transport.playing;
   app.transport.playing = true;     // état synchrone -> le bouton pause ne rate jamais
   updatePlayBtn();
-  const res = await play(code);
+  // Essaie avec le master complet ; repli sans limiteur (si compressor indispo),
+  // puis motif brut : la lecture ne casse jamais à cause de la tranche master.
+  const lim = useLimiter();
+  let res = await play(base + masterFxStr(lim));
+  if (!res.ok && lim) { app.master.limiterOk = false; res = await play(base + masterFxStr(false)); }
+  if (!res.ok) res = await play(base);
   if (!res.ok) { app.transport.playing = wasPlaying; updatePlayBtn(); toast('Oups, réessaie 🎧'); return; }
   if (!wasPlaying) app.transport.startTime = getAudioTime();
   app.transport.cps = app.bpm / 240;
@@ -90,6 +117,37 @@ function highlightStrudel(code) {
   h = h.replace(/\b([a-zA-Z_]\w*)(\()/g, '<span class="f">$1</span>$2'); // fonctions
   return h;
 }
+// ---- Panneau Master : volume + filtre + limiteur, accessible partout ----
+function openMasterPanel() {
+  if (document.querySelector('.kz-master-overlay')) return;
+  const overlay = el('div', 'kz-master-overlay');
+  const panel = el('div', 'kz-master-panel');
+  const head = el('div', 'kz-master-head');
+  const title = el('span', 'kz-master-title'); title.innerHTML = `${icon('master')} Master`;
+  const close = el('button', 'kz-code-btn2'); close.innerHTML = icon('close');
+  head.append(title, close);
+  panel.append(head);
+
+  panel.append(slider(`${icon('gain')} Volume master`, app.master.vol, (v) => { app.master.vol = v; requestPlay(); }, { format: (v) => Math.round(v * 100) + '%' }));
+  panel.append(slider(`${icon('filter')} Filtre master`, app.master.filter, (v) => { app.master.filter = v; requestPlay(); }, { format: (v) => (v < 0.46 ? 'grave' : v > 0.54 ? 'aigu' : 'off') }));
+  panel.append(el('div', 'kz-master-hint', '← ferme les graves · off au centre · éclaircit →'));
+
+  const row = el('div', 'kz-master-row');
+  const lim = el('button', 'kz-chip' + (app.master.limiter ? ' on' : '')); lim.innerHTML = `${icon('crush')} Limiteur`;
+  lim.title = 'Anti-saturation quand tu empiles les sons';
+  lim.addEventListener('click', () => { app.master.limiter = !app.master.limiter; lim.classList.toggle('on', app.master.limiter); requestPlay(); });
+  row.append(lim);
+  const reset = el('button', 'kz-chip'); reset.innerHTML = `${icon('reset')} Réinit.`;
+  reset.addEventListener('click', () => { Object.assign(app.master, { vol: 0.85, filter: 0.5, limiter: true }); requestPlay(); overlay.remove(); openMasterPanel(); });
+  row.append(reset);
+  panel.append(row);
+
+  overlay.append(panel);
+  document.body.append(overlay);
+  close.addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
 function openCodeWindow() {
   if (document.querySelector('.kz-code-overlay')) return;
   const overlay = el('div', 'kz-code-overlay');
@@ -110,7 +168,7 @@ function openCodeWindow() {
 
   let last = null;
   const refresh = () => {
-    const c = (app.mode && app.mode.buildCode) ? app.mode.buildCode() : '// choisis un mode';
+    const c = app.mode ? fullCode() : '// choisis un mode';
     if (c !== last) { last = c; codeEl.innerHTML = highlightStrudel(c); }
   };
   refresh();
@@ -226,6 +284,9 @@ function init() {
   $('kz-viz-btn').innerHTML = icon('kaleido');
   $('kz-code-btn').innerHTML = icon('code') + ' Code';
   $('kz-code-btn').addEventListener('click', openCodeWindow);
+  // Master : tranche master (volume, filtre, limiteur), accessible partout.
+  $('kz-master-btn').innerHTML = icon('master');
+  $('kz-master-btn').addEventListener('click', openMasterPanel);
   // Sync : lancement quantifié à la mesure (activé par défaut).
   const syncBtn = $('kz-sync-btn');
   const updateSync = () => { syncBtn.classList.toggle('on', app.quantize); syncBtn.innerHTML = icon('sync') + ' Sync'; };

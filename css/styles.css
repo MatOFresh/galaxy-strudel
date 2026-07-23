@@ -391,6 +391,31 @@ body { font-family: var(--mono); letter-spacing: .005em; }
 .kz-sync-btn .ic { width: 1.15rem; height: 1.15rem; }
 .kz-sync-btn:active { transform: scale(.94); }
 .kz-sync-btn.on { color: var(--ice); border-color: color-mix(in srgb, var(--ice) 45%, transparent); background: rgba(87,209,255,.14); box-shadow: 0 0 12px rgba(87,209,255,.3); }
+/* Bouton icône compact du transport (Master) */
+.kz-t-icon {
+  flex: none; width: 44px; height: 42px; border: 1px solid var(--panel-b); background: rgba(255,255,255,.05);
+  color: var(--ice); border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
+}
+.kz-t-icon .ic { width: 1.35rem; height: 1.35rem; }
+.kz-t-icon:active { transform: scale(.92); }
+/* ---------- PANNEAU MASTER ---------- */
+.kz-master-overlay {
+  position: fixed; inset: 0; z-index: 150; background: rgba(3,4,6,.68);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  display: flex; align-items: flex-end; justify-content: center; animation: viz-in .22s ease both;
+}
+.kz-master-panel {
+  width: 100%; max-width: 680px; display: flex; flex-direction: column; gap: 14px;
+  background: linear-gradient(180deg, #111319, #0b0d11); border: 1px solid var(--panel-b);
+  border-radius: 20px 20px 0 0; padding: 16px 18px calc(22px + env(safe-area-inset-bottom));
+  animation: sheet-up .4s cubic-bezier(.2,.8,.2,1) both;
+}
+.kz-master-head { display: flex; align-items: center; justify-content: space-between; }
+.kz-master-title { font-family: var(--display); font-weight: 700; display: inline-flex; align-items: center; gap: .5em; font-size: 1.05rem; }
+.kz-master-title .ic { color: var(--ice); width: 1.35rem; height: 1.35rem; }
+.kz-master-hint { color: var(--txt-dim); font-size: .76rem; text-align: center; margin-top: -6px; }
+.kz-master-row { display: flex; gap: 10px; }
+.kz-master-row .kz-chip { flex: 1; justify-content: center; }
 /* Loop / pad "en attente" de la prochaine mesure : clignote */
 .kz-loop-row.pending, .kz-pad.pending { animation: kz-pending .55s ease-in-out infinite; }
 @keyframes kz-pending { 0%,100% { box-shadow: 0 0 0 0 rgba(87,209,255,0); } 50% { box-shadow: 0 0 0 3px rgba(87,209,255,.55); } }
