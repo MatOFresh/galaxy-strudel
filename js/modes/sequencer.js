@@ -122,7 +122,8 @@ export function createSequencer(ctx) {
   function patternsOf(src) {
     const pats = [];
     (src.drums || []).forEach((d) => {
-      if (d.muted || !d.cells.some(Boolean)) return;
+      if (d.muted || !(d.gain > 0.001) || !d.cells.some(Boolean)) return; // volume 0 = silence total
+
       const snd = findSound(d.soundId);
       const name = snd ? snd.name : d.soundId;
       let p = drumRowToMini(name, d.cells);
@@ -135,7 +136,7 @@ export function createSequencer(ctx) {
     });
     const pump = pumpTail(st.dj.sidechain); // "pompe" appliquée aux pistes tenues
     [src.melo, src.bass].forEach((m) => {
-      if (!m || m.muted || !m.cells.some((c) => c != null)) return;
+      if (!m || m.muted || !(m.gain > 0.001) || !m.cells.some((c) => c != null)) return; // volume 0 = silence total
       const snd = findSound(m.soundId);
       const name = snd ? snd.name : m.soundId;
       pats.push(meloGridToMini(name, m.noteRows, m.cells) + fxChain({ gain: m.gain, ...m.fx }) + pump);
