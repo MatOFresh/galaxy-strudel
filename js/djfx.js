@@ -15,6 +15,7 @@ export function defaultDjState() {
     vowel: 0,         // 0 = off, sinon A/E/I/O/U
     swing: 0,         // 0 = droit, jusqu'à ~triolet (groove)
     sidechain: 0,     // 0 = off ; "pompe" (ducking mélodie/basse sous le kick)
+    humanize: 0,      // 0 = mécanique ; ajoute micro-variations gain/timing
   };
 }
 
@@ -45,6 +46,11 @@ export function djFxChain(dj, steps = 16) {
     const amt = num(dj.swing / 3);
     fx += `.swingBy(${amt}, ${n})`;
   }
+  // Humanize : micro-variations aléatoires de volume et de timing (moins robot).
+  if (dj.humanize > 0.01) {
+    const h = dj.humanize;
+    fx += `.gain(rand.range(${num(1 - h * 0.35)},1)).late(rand.range(0,${num(h * 0.014)}))`;
+  }
   return fx;
 }
 
@@ -61,7 +67,7 @@ export function pumpTail(sidechain) {
 export function djIsActive(dj) {
   return !!(dj && (dj.filterOn || dj.autowah || dj.reverse || dj.chop || dj.phaser || dj.vowel > 0
     || dj.time !== 'normal' || dj.room > 0.03 || dj.delay > 0.03 || dj.crush > 0.03 || dj.coarse > 0.03
-    || dj.swing > 0.02 || dj.sidechain > 0.02));
+    || dj.swing > 0.02 || dj.sidechain > 0.02 || dj.humanize > 0.02));
 }
 
 // Construit les contrôles DJ dans `container`. onChange() = ré-évaluation (live).
@@ -74,6 +80,8 @@ export function renderDjControls(container, dj, onChange) {
     container.append(slider(`${icon('swing')} Swing / Groove`, dj.swing, (v) => { dj.swing = v; onChange(); }, { format: (v) => (v < 0.01 ? 'droit' : Math.round(v * 100) + '%') }));
     // Sidechain / Pompe : la mélodie et la basse "respirent" sous le kick.
     container.append(slider(`${icon('pump')} Sidechain / Pompe`, dj.sidechain, (v) => { dj.sidechain = v; onChange(); }, { format: (v) => (v < 0.01 ? 'off' : Math.round(v * 100) + '%') }));
+    // Humanize : rend le jeu moins mécanique (variations gain/timing).
+    container.append(slider(`${icon('dice')} Humanize`, dj.humanize, (v) => { dj.humanize = v; onChange(); }, { format: (v) => (v < 0.01 ? 'off' : Math.round(v * 100) + '%') }));
 
     // Pad XY filtre
     const padWrap = el('div', 'dj-padwrap');

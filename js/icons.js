@@ -13,6 +13,8 @@ const I = {
   plus: S('<path d="M12 5v14M5 12h14"/>'),
   trash: S('<path d="M5 7h14M9 7V4h6v3M7 7l1 12h8l1-12"/>'),
   reset: S('<path d="M5 9h8a4 4 0 110 8H8"/><path d="M5 9l3-3M5 9l3 3"/>'),
+  undo: S('<path d="M9 7L4 12l5 5"/><path d="M4 12h10a5 5 0 015 5"/>'),
+  redo: S('<path d="M15 7l5 5-5 5"/><path d="M20 12H10a5 5 0 00-5 5"/>'),
   // --- transport ---
   play: S('<path d="M8 5l11 7-11 7z"/>', true),
   pause: S('<rect x="7" y="5" width="3.4" height="14" rx="1"/><rect x="13.6" y="5" width="3.4" height="14" rx="1"/>', true),

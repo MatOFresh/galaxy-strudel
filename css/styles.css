@@ -190,6 +190,9 @@ button { font-family: inherit; cursor: pointer; color: var(--txt); }
   box-shadow: 0 0 12px rgba(56, 249, 215, .6);
 }
 .kz-cell.melo.on { background: linear-gradient(135deg, var(--gold), var(--magenta)); box-shadow: 0 0 12px rgba(255, 78, 205, .55); }
+/* Vélocité par pas : accent = fort (ambre + anneau), ghost = faible (atténué) */
+.kz-cell.on.vel-accent { background: linear-gradient(135deg, var(--amber-lo), var(--amber)); box-shadow: 0 0 14px rgba(255,122,44,.7); outline: 2px solid rgba(255,182,90,.9); outline-offset: -2px; }
+.kz-cell.on.vel-ghost { opacity: .5; box-shadow: none; transform: scale(.82); }
 .kz-cell.playing { outline: 2px solid #fff; outline-offset: 1px; }
 .kz-cell.on.playing { transform: scale(1.12); }
 .kz-cell:active { transform: scale(.9); }
@@ -578,6 +581,7 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 
   border-radius: 14px; padding: 12px 8px; min-height: var(--tap);
 }
 .kz-icon-btn.small { flex-direction: row; padding: 8px 12px; border-radius: 999px; }
+.kz-icon-btn.off { opacity: .38; }
 .kz-icon-btn .kz-emoji { font-size: 1.6rem; }
 .kz-icon-btn.small .kz-emoji { font-size: 1.1rem; }
 .kz-ibl { font-size: .78rem; font-weight: 700; }

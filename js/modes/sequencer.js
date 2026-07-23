@@ -68,7 +68,7 @@ export function createSequencer(ctx) {
     return { id: nid(), soundId, cells: Array(st.steps).fill(null), gain: 0.7, muted: false,
       fx: { room: 0.3 }, noteRows: buildNoteRows(st.scale, st.octaves, 3), octaves: st.octaves, base: 3 };
   }
-  function seedStep(track, idxs) { idxs.forEach((i) => { if (i < track.cells.length) track.cells[i] = true; }); }
+  function seedStep(track, idxs) { idxs.forEach((i) => { if (i < track.cells.length) track.cells[i] = 2; }); }
 
   function resizeTracks() {
     const fit = (cells, fill) => {
@@ -80,6 +80,9 @@ export function createSequencer(ctx) {
     if (st.melo) st.melo.cells = fit(st.melo.cells, null);
     if (st.bass) st.bass.cells = fit(st.bass.cells, null);
   }
+
+  // Vélocité par pas : 0=off, 2=normal, 3=accent (fort), 1=ghost (faible).
+  const VEL = { 1: 0.5, 2: 1, 3: 1.4 };
 
   // --- Génération du code ---
   const clone = (o) => (o == null ? null : JSON.parse(JSON.stringify(o)));
@@ -94,7 +97,13 @@ export function createSequencer(ctx) {
       if (d.muted || !d.cells.some(Boolean)) return;
       const snd = findSound(d.soundId);
       const name = snd ? snd.name : d.soundId;
-      pats.push(drumRowToMini(name, d.cells) + fxChain({ gain: d.gain, ...d.fx }));
+      let p = drumRowToMini(name, d.cells);
+      // Vélocité par pas : ajoute une chaîne de gain si des accents/ghosts existent.
+      if (d.cells.some((c) => c === 1 || c === 3)) {
+        const g = d.cells.map((c) => (c ? (VEL[c] ?? 1) : '~')).join(' ');
+        p += `.gain("${g}")`;
+      }
+      pats.push(p + fxChain({ gain: d.gain, ...d.fx }));
     });
     const pump = pumpTail(st.dj.sidechain); // "pompe" appliquée aux pistes tenues
     [src.melo, src.bass].forEach((m) => {
@@ -142,9 +151,42 @@ export function createSequencer(ctx) {
   // --- Rendu ---
   const root = ctx.root;
 
-  function changed() { ctx.requestPlay(); }
+  function changed() { ctx.requestPlay(); scheduleRecord(); }
   // Le changement doit-il être calé sur la mesure ? (Sync ON + en lecture)
   function willQuantize() { return !!(ctx.isPlaying && ctx.isPlaying() && ctx.quantizeOn && ctx.quantizeOn()); }
+
+  // --- Historique : annuler / refaire (A10) ---
+  let history = [], hp = -1, histTimer = null, restoring = false;
+  function fullState() {
+    return JSON.stringify({ steps: st.steps, scale: st.scale, octaves: st.octaves, drums: st.drums, melo: st.melo, bass: st.bass, scenes: st.scenes, songMode: st.songMode, editing: st.editing, dropSnap: st.dropSnap, dj: st.dj });
+  }
+  function recordNow() {
+    const s = fullState();
+    if (hp >= 0 && s === history[hp]) return;   // rien de neuf (ex : après un undo)
+    history = history.slice(0, hp + 1);
+    history.push(s); hp = history.length - 1;
+    if (history.length > 40) { history.shift(); hp--; }
+  }
+  function scheduleRecord() { if (restoring) return; if (histTimer) clearTimeout(histTimer); histTimer = setTimeout(() => { histTimer = null; recordNow(); }, 350); }
+  function restoreFull(json) {
+    const o = JSON.parse(json);
+    restoring = true;
+    st.steps = o.steps; st.scale = o.scale; st.octaves = o.octaves;
+    st.drums = o.drums; st.melo = o.melo; st.bass = o.bass;
+    st.scenes = o.scenes; st.songMode = o.songMode; st.editing = o.editing; st.dropSnap = o.dropSnap;
+    Object.assign(st.dj, o.dj);
+    render(); ctx.requestPlay();
+    restoring = false;
+  }
+  function undo() {
+    if (histTimer) { clearTimeout(histTimer); histTimer = null; recordNow(); } // fige le changement en cours
+    if (hp <= 0) { toast('Rien à annuler'); return; }
+    hp--; restoreFull(history[hp]); toast('Annulé ↩');
+  }
+  function redo() {
+    if (hp >= history.length - 1) { toast('Rien à refaire'); return; }
+    hp++; restoreFull(history[hp]); toast('Refait ↪');
+  }
   // Lancement d'un loop / bascule de mode : quantifié si possible.
   function launch() { ctx.requestPlay(willQuantize() ? { quantize: true } : undefined); }
 
@@ -154,6 +196,8 @@ export function createSequencer(ctx) {
 
     // Barre outils
     const tools = el('div', 'kz-seq-tools');
+    tools.append(iconButton(icon('undo'), 'Annuler', undo, 'small'));
+    tools.append(iconButton(icon('redo'), 'Refaire', redo, 'small'));
     tools.append(iconButton(icon('dice'), 'Surprise', () => { randomize(); toast('Nouveau motif !'); }, 'small'));
     tools.append(iconButton(icon('eraser'), 'Effacer', () => { clearAll(); }, 'small'));
     tools.append(iconButton(icon('sliders'), 'Ultra DJ', () => { const wasOpen = st.djOpen; st.djOpen = !st.djOpen; if (st.djOpen) st.feelOpen = false; render(); if (!wasOpen) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 'small' + ((st.djOpen || djIsActive(st.dj)) ? ' active' : '')));
@@ -228,9 +272,18 @@ export function createSequencer(ctx) {
     const cells = el('div', 'kz-cells');
     cells.style.setProperty('--steps', st.steps);
     d.cells.forEach((on, i) => {
-      const c = el('button', 'kz-cell' + (on ? ' on' : '') + (i % 4 === 0 ? ' beat' : ''));
+      const c = el('button', 'kz-cell' + (on ? ' on' : '') + (on === 3 ? ' vel-accent' : '') + (on === 1 ? ' vel-ghost' : '') + (i % 4 === 0 ? ' beat' : ''));
       c.dataset.step = i;
-      c.addEventListener('click', () => { d.cells[i] = !d.cells[i]; c.classList.toggle('on'); changed(); });
+      // Tape : off -> normal -> accent (fort) -> ghost (faible) -> off.
+      c.addEventListener('click', () => {
+        const cur = d.cells[i];
+        const next = !cur ? 2 : (cur === 3 ? 1 : (cur === 1 ? 0 : 3));
+        d.cells[i] = next;
+        c.classList.toggle('on', !!next);
+        c.classList.toggle('vel-accent', next === 3);
+        c.classList.toggle('vel-ghost', next === 1);
+        changed();
+      });
       cells.append(c);
     });
     row.append(cells);
@@ -319,9 +372,9 @@ export function createSequencer(ctx) {
   function randomize() {
     st.drums.forEach((d, di) => {
       d.cells = d.cells.map((_, i) => {
-        if (di === 0) return i % 4 === 0;                // kick sur les temps
-        if (di === 1) return i % 8 === 4;                // snare backbeat
-        return Math.random() < 0.35;                      // reste aléatoire
+        if (di === 0) return i % 4 === 0 ? 2 : 0;         // kick sur les temps
+        if (di === 1) return i % 8 === 4 ? 2 : 0;         // snare backbeat
+        return Math.random() < 0.35 ? 2 : 0;              // reste aléatoire
       });
     });
     if (st.melo) {
@@ -331,7 +384,7 @@ export function createSequencer(ctx) {
     render(); changed();
   }
   function clearAll() {
-    st.drums.forEach((d) => (d.cells = d.cells.map(() => false)));
+    st.drums.forEach((d) => (d.cells = d.cells.map(() => 0)));
     if (st.melo) st.melo.cells = st.melo.cells.map(() => null);
     if (st.bass) st.bass.cells = st.bass.cells.map(() => null);
     render(); changed();
@@ -398,10 +451,10 @@ export function createSequencer(ctx) {
   function setDrumEnergy(energy) {
     st.drums.forEach((d, di) => {
       d.cells = d.cells.map((_, i) => {
-        if (di === 0) return i % 4 === 0;                         // kick : sur les temps
-        if (di === 1) return i % 8 === 4;                         // snare : backbeat
-        if (di === 2) return Math.random() < (0.25 + energy * 0.6); // hats : densité selon énergie
-        return Math.random() < energy * 0.4;                      // reste : ghost notes
+        if (di === 0) return i % 4 === 0 ? 2 : 0;                          // kick : sur les temps
+        if (di === 1) return i % 8 === 4 ? 2 : 0;                          // snare : backbeat
+        if (di === 2) return Math.random() < (0.25 + energy * 0.6) ? 2 : 0; // hats : densité selon énergie
+        return Math.random() < energy * 0.4 ? 2 : 0;                       // reste : ghost notes
       });
     });
   }
@@ -443,17 +496,17 @@ export function createSequencer(ctx) {
     } else {
       const n = st.drums.length;
       if (!n) return;
-      st.drums.forEach((d) => (d.cells = d.cells.map(() => false)));
+      st.drums.forEach((d) => (d.cells = d.cells.map(() => 0)));
       cols.forEach((y, i) => {
-        if (y == null) { if (Math.random() < rnd * 0.22) st.drums[Math.floor(Math.random() * n)].cells[i] = true; return; }
+        if (y == null) { if (Math.random() < rnd * 0.22) st.drums[Math.floor(Math.random() * n)].cells[i] = 2; return; }
         let band = Math.round((1 - y) * (n - 1));                 // bas (y=1) -> grave (kick, index 0)
         if (rnd > 0.15 && Math.random() < rnd) band += (Math.random() < 0.5 ? -1 : 1);
         band = Math.max(0, Math.min(n - 1, band));
-        st.drums[band].cells[i] = true;
-        if (Math.random() < rnd * 0.2) st.drums[Math.floor(Math.random() * n)].cells[i] = true;
+        st.drums[band].cells[i] = 2;
+        if (Math.random() < rnd * 0.2) st.drums[Math.floor(Math.random() * n)].cells[i] = 1; // ghost
       });
-      st.drums[0].cells[0] = true;                               // fondation kick
-      for (let i = 4; i < st.steps; i += 4) if (Math.random() < 1 - rnd * 0.5) st.drums[0].cells[i] = true;
+      st.drums[0].cells[0] = 2;                                  // fondation kick
+      for (let i = 4; i < st.steps; i += 4) if (Math.random() < 1 - rnd * 0.5) st.drums[0].cells[i] = 2;
       st.mood = null;
       render(); changed(); toast('Ton dessin joue le rythme 🥁');
     }
@@ -470,7 +523,7 @@ export function createSequencer(ctx) {
     const toggle = el('button', 'kz-song-toggle' + (st.songMode ? ' on' : ''));
     toggle.innerHTML = st.songMode ? `${icon('song')} Morceau` : `${icon('loop')} Boucle`;
     toggle.title = st.songMode ? 'Joue tous les loops à la suite' : 'Joue seulement le loop courant en boucle';
-    toggle.addEventListener('click', () => { st.songMode = !st.songMode; const q = willQuantize(); render(); ctx.requestPlay(q ? { quantize: true } : undefined); });
+    toggle.addEventListener('click', () => { st.songMode = !st.songMode; const q = willQuantize(); render(); ctx.requestPlay(q ? { quantize: true } : undefined); scheduleRecord(); });
     head.append(toggle);
     box.append(head);
 
@@ -564,6 +617,7 @@ export function createSequencer(ctx) {
     st.pending = q ? i : null;        // le loop clignote jusqu'à son entrée sur la mesure
     render();
     ctx.requestPlay(q ? { quantize: true } : undefined);
+    scheduleRecord();
   }
   function defineDrop() { st.dropSnap = snapshot(); render(); toast('🔥 Drop défini ! Fais "Break auto".'); }
   function autoBreakDrop() {
@@ -613,7 +667,7 @@ export function createSequencer(ctx) {
       if (st.melo) { st.melo.noteRows = buildNoteRows(st.scale, st.octaves, 3); }
       render();
     },
-    init() { defaultKit(); render(); },
+    init() { defaultKit(); render(); recordNow(); },
     destroy() { root.innerHTML = ''; },
   };
 }
