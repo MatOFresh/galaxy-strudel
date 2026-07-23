@@ -1,6 +1,7 @@
 // modes/sequencer.js — grille séquenceur (une ligne par instrument).
 import { el, slider, openSoundLibrary, iconButton, toast } from '../ui.js';
-import { findSound, KITS, addProcessedSound } from '../sounds.js';
+import { findSound, KITS, addProcessedSound, pickSound, VIBES, getVibe } from '../sounds.js';
+import { GENRES, fitTemplate } from '../genres.js';
 import { openVoiceStudio } from '../voice.js';
 import { openDrawStudio } from '../draw.js';
 import { EMOTIONS, findEmotion, renderFeelingsPanel } from '../feelings.js';
@@ -158,7 +159,7 @@ export function createSequencer(ctx) {
   // --- Historique : annuler / refaire (A10) ---
   let history = [], hp = -1, histTimer = null, restoring = false;
   function fullState() {
-    return JSON.stringify({ steps: st.steps, scale: st.scale, octaves: st.octaves, drums: st.drums, melo: st.melo, bass: st.bass, scenes: st.scenes, songMode: st.songMode, editing: st.editing, dropSnap: st.dropSnap, dj: st.dj });
+    return JSON.stringify({ bpm: ctx.getBpm ? ctx.getBpm() : null, steps: st.steps, scale: st.scale, octaves: st.octaves, drums: st.drums, melo: st.melo, bass: st.bass, scenes: st.scenes, songMode: st.songMode, editing: st.editing, dropSnap: st.dropSnap, dj: st.dj });
   }
   function recordNow() {
     const s = fullState();
@@ -171,6 +172,7 @@ export function createSequencer(ctx) {
   function restoreFull(json) {
     const o = JSON.parse(json);
     restoring = true;
+    if (o.bpm && ctx.setBpm) ctx.setBpm(o.bpm);
     st.steps = o.steps; st.scale = o.scale; st.octaves = o.octaves;
     st.drums = o.drums; st.melo = o.melo; st.bass = o.bass;
     st.scenes = o.scenes; st.songMode = o.songMode; st.editing = o.editing; st.dropSnap = o.dropSnap;
@@ -199,6 +201,7 @@ export function createSequencer(ctx) {
     tools.append(iconButton(icon('undo'), 'Annuler', undo, 'small'));
     tools.append(iconButton(icon('redo'), 'Refaire', redo, 'small'));
     tools.append(iconButton(icon('dice'), 'Surprise', () => { randomize(); toast('Nouveau motif !'); }, 'small'));
+    tools.append(iconButton(icon('wand'), 'Génère', () => openGenrePicker(), 'small'));
     tools.append(iconButton(icon('eraser'), 'Effacer', () => { clearAll(); }, 'small'));
     tools.append(iconButton(icon('sliders'), 'Ultra DJ', () => { const wasOpen = st.djOpen; st.djOpen = !st.djOpen; if (st.djOpen) st.feelOpen = false; render(); if (!wasOpen) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 'small' + ((st.djOpen || djIsActive(st.dj)) ? ' active' : '')));
     tools.append(iconButton(icon('mood'), 'Feelings', () => { const wasOpen = st.feelOpen; st.feelOpen = !st.feelOpen; if (st.feelOpen) st.djOpen = false; render(); if (!wasOpen) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 'small' + ((st.feelOpen || st.mood) ? ' active' : '')));
@@ -381,13 +384,13 @@ export function createSequencer(ctx) {
       const rows = st.melo.noteRows;
       st.melo.cells = st.melo.cells.map(() => (Math.random() < 0.4 ? Math.floor(Math.random() * rows.length) : null));
     }
-    render(); changed();
+    render(); changed(); recordNow();
   }
   function clearAll() {
     st.drums.forEach((d) => (d.cells = d.cells.map(() => 0)));
     if (st.melo) st.melo.cells = st.melo.cells.map(() => null);
     if (st.bass) st.bass.cells = st.bass.cells.map(() => null);
-    render(); changed();
+    render(); changed(); recordNow();
   }
 
   // --- Sous-menu Ultra DJ ---
@@ -472,7 +475,7 @@ export function createSequencer(ctx) {
       st.bass.cells = st.bass.cells.map((_, i) => (i % 4 === 0 ? lo : (Math.random() < emo.energy * 0.35 ? Math.floor(Math.random() * st.bass.noteRows.length) : null)));
     }
     st.mood = emo.id;
-    render(); changed();
+    render(); changed(); recordNow();
     toast(emo.label + ' ' + '🎛️');
   }
 
@@ -492,7 +495,7 @@ export function createSequencer(ctx) {
       let placed = st.melo.cells.filter((c) => c != null).length;
       while (placed < 3) { const i = Math.floor(Math.random() * st.steps); if (st.melo.cells[i] == null) { st.melo.cells[i] = Math.floor(Math.random() * R); placed++; } }
       st.mood = null;
-      render(); changed(); toast('Ton dessin joue la mélodie 🎨');
+      render(); changed(); recordNow(); toast('Ton dessin joue la mélodie 🎨');
     } else {
       const n = st.drums.length;
       if (!n) return;
@@ -508,8 +511,74 @@ export function createSequencer(ctx) {
       st.drums[0].cells[0] = 2;                                  // fondation kick
       for (let i = 4; i < st.steps; i += 4) if (Math.random() < 1 - rnd * 0.5) st.drums[0].cells[i] = 2;
       st.mood = null;
-      render(); changed(); toast('Ton dessin joue le rythme 🥁');
+      render(); changed(); recordNow(); toast('Ton dessin joue le rythme 🥁');
     }
+  }
+
+  // --- Générateur de morceau par genre (B1) ---
+  function generateGenre(id) {
+    const R = GENRES[id];
+    if (!R) return;
+    const n = st.steps;
+    const bpm = R.bpm[0] + Math.floor(Math.random() * (R.bpm[1] - R.bpm[0] + 1));
+    if (ctx.setBpm) ctx.setBpm(bpm);
+    st.scale = R.scale;
+    st.dj.swing = R.swing || 0;
+    st.songMode = false; st.editing = null;
+
+    // Batterie : un son du genre par rôle, motif typé (vélocité incluse).
+    st.drums = [];
+    const roles = [['kick', R.kick], ['snare', R.snare], ['hat', R.hat], ['clap', R.clap]];
+    roles.forEach(([emoji, tmpl]) => {
+      if (!tmpl || !tmpl.some((v) => v)) return;
+      const snd = pickSound({ emoji, type: 'drum', vibe: id });
+      if (!snd) return;
+      const d = makeDrum(snd.id);
+      d.cells = fitTemplate(tmpl, n).map((v) => (emoji === 'hat' && v === 2 && Math.random() < 0.15 ? 1 : v)); // hats un peu humanisés
+      st.drums.push(d);
+    });
+
+    // Mélodie : son "synthé" du genre + motif au registre/contour du style.
+    const meloSnd = pickSound({ emoji: 'synth', type: 'melo', vibe: id }) || pickSound({ type: 'melo' });
+    st.melo = makeMelo(meloSnd.id);
+    st.melo.noteRows = buildNoteRows(st.scale, st.melo.octaves, 3);
+    regenMelodyShaped(R.mel);
+
+    // Basse (Expert) : son de basse du genre, fondamentale sur le motif.
+    if (ctx.getLevel() === 'expert') {
+      const bassSnd = pickSound({ emoji: 'bass', type: 'melo', vibe: id }) || pickSound({ emoji: 'bass', type: 'melo' });
+      st.bass = makeMelo(bassSnd ? bassSnd.id : 'jvbass');
+      st.bass.octaves = 1; st.bass.base = 2;
+      st.bass.noteRows = buildNoteRows(st.scale, 1, 2);
+      const lo = st.bass.noteRows.length - 1;
+      st.bass.cells = fitTemplate(R.bass, n).map((v) => (v ? (Math.random() < 0.25 ? Math.floor(Math.random() * st.bass.noteRows.length) : lo) : null));
+    }
+    render(); changed(); recordNow(); // action discrète -> un pas d'historique propre
+  }
+
+  function openGenrePicker() {
+    const overlay = el('div', 'kz-modal-overlay');
+    const modal = el('div', 'kz-modal small kz-genre');
+    const head = el('div', 'kz-modal-head');
+    const h2 = el('h2'); h2.innerHTML = `<span class="kz-h2-ic">${icon('wand')}</span>Générateur`;
+    const close = el('button', 'kz-close'); close.innerHTML = icon('close');
+    close.addEventListener('click', () => overlay.remove());
+    head.append(h2, close);
+    modal.append(head);
+    modal.append(el('div', 'kz-voice-hint', 'Choisis un style — je compose le morceau entier.'));
+    const grid = el('div', 'kz-genre-grid');
+    Object.entries(GENRES).forEach(([gid, g]) => {
+      const v = getVibe(gid) || VIBES[gid];
+      const b = el('button', 'kz-genre-btn');
+      if (v) b.style.setProperty('--vc', v.color);
+      b.innerHTML = `<span class="kz-genre-dot"></span><span>${g.label}</span>`;
+      b.addEventListener('click', () => { generateGenre(gid); overlay.remove(); toast('Morceau ' + g.label + ' généré 🎹'); });
+      grid.append(b);
+    });
+    modal.append(grid);
+    overlay.append(modal);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    document.body.append(overlay);
   }
 
   // --- Mode Morceau : panneau + actions ---

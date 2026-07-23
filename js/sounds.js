@@ -113,6 +113,16 @@ export const VIBES = {
 };
 export function getVibe(id) { return VIBES[id] || null; }
 
+// Choisit un son de la bibliothèque par rôle (emoji), type et genre (vibe).
+// Préfère un son du bon genre, sinon retombe sur le premier du rôle.
+export function pickSound({ emoji, type, vibe } = {}) {
+  let pool = Object.values(LIBRARY).flat();
+  if (type) pool = pool.filter((s) => s.type === type);
+  if (emoji) pool = pool.filter((s) => s.emoji === emoji);
+  if (!pool.length) return null;
+  return pool.find((s) => s.vibe === vibe) || pool[0];
+}
+
 // Sons importés par l'utilisateur (ajoutés dans une catégorie dédiée).
 const imported = [];
 
