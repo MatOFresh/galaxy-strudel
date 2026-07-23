@@ -2,6 +2,7 @@
 import { el, slider, openSoundLibrary, iconButton, toast } from '../ui.js';
 import { findSound, KITS, addProcessedSound, pickSound, VIBES, getVibe } from '../sounds.js';
 import { GENRES, fitTemplate } from '../genres.js';
+import { makeChar, drawDancer } from '../dancers.js';
 import { openVoiceStudio } from '../voice.js';
 import { openDrawStudio } from '../draw.js';
 import { EMOTIONS, findEmotion, renderFeelingsPanel } from '../feelings.js';
@@ -36,6 +37,31 @@ export function createSequencer(ctx) {
 
   let uid = 0;
   const nid = () => 'trk' + (uid++);
+
+  // Danseurs pixel-art par piste (overlay animé, sans gêner le séquenceur).
+  st.danceOn = true;
+  let dancers = [], danceSeed = 0, danceRAF = 0;
+  function addDancer(container) {
+    if (!st.danceOn) return;
+    container.style.position = 'relative';
+    const cv = el('canvas', 'kz-dancer');
+    container.append(cv);
+    dancers.push({ cv, char: makeChar(danceSeed++) });
+  }
+  function danceLoop() {
+    danceRAF = requestAnimationFrame(danceLoop);
+    if (!st.danceOn || !dancers.length) return;
+    const cyc = ctx.getElapsedCycles ? ctx.getElapsedCycles() : -1;
+    const playing = cyc >= 0;
+    const t = playing ? cyc : performance.now() / 2400;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    for (const d of dancers) {
+      const cw = d.cv.clientWidth, ch = d.cv.clientHeight;
+      if (!cw || !ch) continue;
+      if (d.cv.width !== Math.round(cw * dpr) || d.cv.height !== Math.round(ch * dpr)) { d.cv.width = Math.round(cw * dpr); d.cv.height = Math.round(ch * dpr); }
+      drawDancer(d.cv.getContext('2d'), d.cv.width, d.cv.height, t, playing, st.steps, d.char);
+    }
+  }
 
   function defaultKit() {
     const kit = KITS['Techno galaxie'];
@@ -195,6 +221,7 @@ export function createSequencer(ctx) {
 
   function render() {
     root.innerHTML = '';
+    dancers = []; danceSeed = 0;   // les canvases sont recréés à chaque rendu
     const level = ctx.getLevel();
 
     // Barre outils
@@ -203,6 +230,7 @@ export function createSequencer(ctx) {
     tools.append(iconButton(icon('redo'), 'Refaire', redo, 'small'));
     tools.append(iconButton(icon('dice'), 'Surprise', () => { randomize(); toast('Nouveau motif !'); }, 'small'));
     tools.append(iconButton(icon('wand'), 'Génère', () => openGenrePicker(), 'small'));
+    tools.append(iconButton(icon('dance'), 'Danse', () => { st.danceOn = !st.danceOn; render(); toast(st.danceOn ? 'Danseurs activés 🕺' : 'Danseurs coupés'); }, 'small' + (st.danceOn ? ' active' : '')));
     tools.append(iconButton(icon('eraser'), 'Effacer', () => { clearAll(); }, 'small'));
     tools.append(iconButton(icon('sliders'), 'Ultra DJ', () => { const wasOpen = st.djOpen; st.djOpen = !st.djOpen; if (st.djOpen) st.feelOpen = false; render(); if (!wasOpen) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 'small' + ((st.djOpen || djIsActive(st.dj)) ? ' active' : '')));
     tools.append(iconButton(icon('mood'), 'Feelings', () => { const wasOpen = st.feelOpen; st.feelOpen = !st.feelOpen; if (st.feelOpen) st.djOpen = false; render(); if (!wasOpen) window.scrollTo({ top: 0, behavior: 'smooth' }); }, 'small' + ((st.feelOpen || st.mood) ? ' active' : '')));
@@ -290,6 +318,7 @@ export function createSequencer(ctx) {
       });
       cells.append(c);
     });
+    addDancer(cells);
     row.append(cells);
 
     if (level === 'expert') row.append(renderFxRow(d));
@@ -332,6 +361,7 @@ export function createSequencer(ctx) {
       line.append(cells);
       gridEl.append(line);
     });
+    addDancer(gridEl);
     wrap.append(gridEl);
     if (level === 'expert') wrap.append(renderFxRow(m));
     return wrap;
@@ -786,7 +816,7 @@ export function createSequencer(ctx) {
       if (st.melo) { st.melo.noteRows = buildNoteRows(st.scale, st.octaves, 3); }
       render();
     },
-    init() { defaultKit(); render(); recordNow(); },
-    destroy() { root.innerHTML = ''; },
+    init() { defaultKit(); render(); recordNow(); danceLoop(); },
+    destroy() { if (danceRAF) cancelAnimationFrame(danceRAF); dancers = []; root.innerHTML = ''; },
   };
 }

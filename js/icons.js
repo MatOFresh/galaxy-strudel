@@ -75,6 +75,7 @@ const I = {
   bass: S('<path d="M5 16a3 3 0 106 0 3 3 0 10-6 0"/><path d="M11 16V5l8-2v10"/>'),
   synth: S('<path d="M3 12h3l3-6 3 12 3-9 3 3h3"/>'),
   voice: S('<rect x="9.5" y="4" width="5" height="9" rx="2.5"/><path d="M6.5 11a5.5 5.5 0 0011 0M12 16.5V20M9 20h6"/>'),
+  dance: S('<circle cx="13" cy="4.5" r="1.6" fill="currentColor" stroke="none"/><path d="M13 7l-3 3 1 4-2 5M13 7l3 2 3-1M11 10l-3 1M13 13l2 6"/>'),
   star: S('<path d="M12 3l2.2 6.5H21l-5.4 3.9 2 6.6L12 16l-5.6 4 2-6.6L3 9.5h6.8z"/>', true),
   noise: S('<path d="M3 12h2l1.5-5 2 10 2-7 2 4 1.5-6 2 8 1.5-4H21"/>'),
   chip: S('<rect x="6" y="6" width="12" height="12" rx="2"/><circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none"/>'),
