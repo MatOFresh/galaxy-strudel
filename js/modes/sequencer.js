@@ -111,6 +111,9 @@ export function createSequencer(ctx) {
 
   // Vélocité par pas : 0=off, 2=normal, 3=accent (fort), 1=ghost (faible).
   const VEL = { 1: 0.5, 2: 1, 3: 1.4 };
+  // Rôle d'une piste d'après son son (kick/snare/hat/clap...) — évite de se fier
+  // à l'ordre des pistes (qui varie après une génération de genre).
+  function drumRole(d) { const s = findSound(d.soundId); return s ? s.emoji : ''; }
 
   // --- Génération du code ---
   const clone = (o) => (o == null ? null : JSON.parse(JSON.stringify(o)));
@@ -192,7 +195,7 @@ export function createSequencer(ctx) {
   // --- Historique : annuler / refaire (A10) ---
   let history = [], hp = -1, histTimer = null, restoring = false;
   function fullState() {
-    return JSON.stringify({ bpm: ctx.getBpm ? ctx.getBpm() : null, steps: st.steps, scale: st.scale, octaves: st.octaves, drums: st.drums, melo: st.melo, bass: st.bass, scenes: st.scenes, songMode: st.songMode, editing: st.editing, dropSnap: st.dropSnap, dj: st.dj });
+    return JSON.stringify({ bpm: ctx.getBpm ? ctx.getBpm() : null, steps: st.steps, scale: st.scale, octaves: st.octaves, drums: st.drums, melo: st.melo, bass: st.bass, scenes: st.scenes, songMode: st.songMode, editing: st.editing, dropSnap: st.dropSnap, dj: st.dj, mood: st.mood, morph: st.morph });
   }
   function recordNow() {
     const s = fullState();
@@ -209,6 +212,7 @@ export function createSequencer(ctx) {
     st.steps = o.steps; st.scale = o.scale; st.octaves = o.octaves;
     st.drums = o.drums; st.melo = o.melo; st.bass = o.bass;
     st.scenes = o.scenes; st.songMode = o.songMode; st.editing = o.editing; st.dropSnap = o.dropSnap;
+    st.mood = o.mood ?? null; if (o.morph) st.morph = o.morph;
     Object.assign(st.dj, o.dj);
     render(); ctx.requestPlay();
     restoring = false;
@@ -411,11 +415,13 @@ export function createSequencer(ctx) {
     if (st.bass) { st.bass.noteRows = buildNoteRows(st.scale, 1, 2); st.bass.cells = st.bass.cells.map(() => null); }
   }
   function randomize() {
-    st.drums.forEach((d, di) => {
+    st.drums.forEach((d) => {
+      const role = drumRole(d);
       d.cells = d.cells.map((_, i) => {
-        if (di === 0) return i % 4 === 0 ? 2 : 0;         // kick sur les temps
-        if (di === 1) return i % 8 === 4 ? 2 : 0;         // snare backbeat
-        return Math.random() < 0.35 ? 2 : 0;              // reste aléatoire
+        if (role === 'kick') return i % 4 === 0 ? 2 : 0;                  // kick sur les temps
+        if (role === 'snare' || role === 'clap') return i % 8 === 4 ? 2 : 0; // backbeat
+        if (role === 'hat' || role === 'cymbal') return Math.random() < 0.5 ? 2 : 0;
+        return Math.random() < 0.35 ? 2 : 0;                             // reste aléatoire
       });
     });
     if (st.melo) {
@@ -511,12 +517,13 @@ export function createSequencer(ctx) {
   }
 
   function setDrumEnergy(energy) {
-    st.drums.forEach((d, di) => {
+    st.drums.forEach((d) => {
+      const role = drumRole(d);
       d.cells = d.cells.map((_, i) => {
-        if (di === 0) return i % 4 === 0 ? 2 : 0;                          // kick : sur les temps
-        if (di === 1) return i % 8 === 4 ? 2 : 0;                          // snare : backbeat
-        if (di === 2) return Math.random() < (0.25 + energy * 0.6) ? 2 : 0; // hats : densité selon énergie
-        return Math.random() < energy * 0.4 ? 2 : 0;                       // reste : ghost notes
+        if (role === 'kick') return i % 4 === 0 ? 2 : 0;                          // kick : sur les temps
+        if (role === 'snare' || role === 'clap') return i % 8 === 4 ? 2 : 0;      // backbeat
+        if (role === 'hat' || role === 'cymbal') return Math.random() < (0.25 + energy * 0.6) ? 2 : 0; // densité selon énergie
+        return Math.random() < energy * 0.4 ? 2 : 0;                              // reste : ghost notes
       });
     });
   }
@@ -548,8 +555,10 @@ export function createSequencer(ctx) {
     const scale = t < 0.5 ? A.scale : B.scale;
     if (scale !== st.scale) {
       st.scale = scale;
-      if (st.melo) st.melo.noteRows = buildNoteRows(st.scale, st.melo.octaves, st.melo.base);
-      if (st.bass) st.bass.noteRows = buildNoteRows(st.scale, 1, 2);
+      // rebâtit les gammes ET reborne les notes (sinon une note hors de la
+      // nouvelle gamme -> noteRows[idx] undefined -> code Strudel cassé).
+      if (st.melo) { st.melo.noteRows = buildNoteRows(st.scale, st.melo.octaves, st.melo.base); const R = st.melo.noteRows.length; st.melo.cells = st.melo.cells.map((c) => (c == null ? null : Math.min(c, R - 1))); }
+      if (st.bass) { st.bass.noteRows = buildNoteRows(st.scale, 1, 2); const R = st.bass.noteRows.length; st.bass.cells = st.bass.cells.map((c) => (c == null ? null : Math.min(c, R - 1))); }
     }
     // Effets : interpolation des champs continus des deux ambiances.
     const da = { ...defaultDjState(), ...A.dj }, db = { ...defaultDjState(), ...B.dj };
@@ -749,16 +758,19 @@ export function createSequencer(ctx) {
     const j = i + dir; if (j < 0 || j >= st.scenes.length) return;
     const t = st.scenes[i]; st.scenes[i] = st.scenes[j]; st.scenes[j] = t;
     if (st.editing === i) st.editing = j; else if (st.editing === j) st.editing = i;
+    if (st.pending === i) st.pending = j; else if (st.pending === j) st.pending = i;
     render(); changed();
   }
   function dupScene(i) {
     st.scenes.splice(i + 1, 0, clone(st.scenes[i]));
     if (st.editing != null && st.editing > i) st.editing++;
+    if (st.pending != null && st.pending > i) st.pending++;
     render(); changed(); toast('Loop dupliqué');
   }
   function delScene(i) {
     st.scenes.splice(i, 1);
     if (st.editing === i) st.editing = null; else if (st.editing != null && st.editing > i) st.editing--;
+    if (st.pending === i) st.pending = null; else if (st.pending != null && st.pending > i) st.pending--;
     render(); changed();
   }
   function loadScene(i) {
@@ -798,7 +810,8 @@ export function createSequencer(ctx) {
     if (st.songMode && st.scenes.length && ctx.getElapsedCycles) {
       const rows = root.querySelectorAll('.kz-loop-row');
       if (!rows.length) return;
-      const cyc = ctx.getElapsedCycles();
+      const bpl = (ctx.barsPerLoop ? ctx.barsPerLoop() : 1) || 1;
+      const cyc = ctx.getElapsedCycles() / bpl; // getElapsedCycles = mesures ; arrange compte en cycles(=bpl mesures)
       if (cyc < 0) { rows.forEach((r) => r.classList.remove('now')); return; }
       const total = st.scenes.reduce((a, s) => a + s.bars, 0) || 1;
       const pos = cyc % total;

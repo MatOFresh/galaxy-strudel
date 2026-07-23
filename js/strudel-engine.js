@@ -33,14 +33,19 @@ function installAudioTap() {
     state.timeData = new Uint8Array(analyser.fftSize);
 
     const dest = ctx.destination;
-    const origConnect = AudioNode.prototype.connect;
-    AudioNode.prototype.connect = function (target, ...rest) {
-      // Ne jamais taper l'analyseur lui-même (évite les boucles).
-      if (this !== analyser && target === dest) {
-        try { origConnect.call(this, analyser); } catch (e) { /* noop */ }
-      }
-      return origConnect.call(this, target, ...rest);
-    };
+    // Ne patcher le prototype qu'UNE fois (même si un 2e AudioContext apparaît).
+    if (!AudioNode.prototype.connect.__kzPatched) {
+      const origConnect = AudioNode.prototype.connect;
+      const patched = function (target, ...rest) {
+        // Ne jamais taper l'analyseur lui-même (évite les boucles).
+        if (this !== state.analyser && target === dest) {
+          try { origConnect.call(this, state.analyser); } catch (e) { /* noop */ }
+        }
+        return origConnect.call(this, target, ...rest);
+      };
+      patched.__kzPatched = true;
+      AudioNode.prototype.connect = patched;
+    }
   } catch (e) {
     console.warn('[kz] audio tap indisponible', e);
   }

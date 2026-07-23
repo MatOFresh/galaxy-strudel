@@ -39,9 +39,11 @@ function detectPeriod(buf, sr) {
 
 // Hauteur dominante : autocorrélation sur la fenêtre la plus énergique.
 function dominantPitch(input, sr) {
+  if (input.length < 2) return 0;
   const w = Math.min(4096, input.length);
+  const step = Math.max(1, w >> 1);   // évite une boucle infinie sur un clip minuscule
   let bestStart = 0, bestE = -1;
-  for (let s = 0; s + w <= input.length; s += w >> 1) {
+  for (let s = 0; s + w <= input.length; s += step) {
     let e = 0; for (let i = 0; i < w; i++) e += input[s + i] * input[s + i];
     if (e > bestE) { bestE = e; bestStart = s; }
   }
@@ -82,6 +84,11 @@ export function encodeWavUrl(samples, sr) {
 
 // --- Enregistrement micro ---
 let stream = null, recorder = null, chunks = [];
+// Libère le micro à coup sûr (même si on ferme en plein enregistrement).
+function stopMic() {
+  try { if (recorder && recorder.state === 'recording') recorder.stop(); } catch (_) { /* noop */ }
+  try { if (stream) stream.getTracks().forEach((t) => t.stop()); } catch (_) { /* noop */ }
+}
 async function startRec() {
   stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
   recorder = new MediaRecorder(stream);
@@ -133,7 +140,7 @@ export function openVoiceStudio(scaleName, onAdd) {
   const head = el('div', 'kz-modal-head');
   const h2 = el('h2'); h2.innerHTML = `<span class="kz-h2-ic">${icon('voice')}</span>Studio Voix`;
   const close = el('button', 'kz-close'); close.innerHTML = icon('close');
-  close.addEventListener('click', () => { try { if (recorder && recorder.state === 'recording') recorder.stop(); } catch (_) {} overlay.remove(); });
+  close.addEventListener('click', () => { stopMic(); overlay.remove(); });
   head.append(h2, close);
   modal.append(head);
 
@@ -189,6 +196,6 @@ export function openVoiceStudio(scaleName, onAdd) {
   render();
 
   overlay.append(modal);
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) { try { if (recorder && recorder.state === 'recording') recorder.stop(); } catch (_) {} overlay.remove(); } });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) { stopMic(); overlay.remove(); } });
   document.body.append(overlay);
 }

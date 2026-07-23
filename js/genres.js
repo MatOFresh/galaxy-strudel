@@ -61,9 +61,11 @@ export const GENRES = {
   },
 };
 
-// Adapte un motif 16 pas au nombre de pas courant (8 = un pas sur deux).
+// Adapte un motif 16 pas au nombre de pas courant : 8 = un pas sur deux,
+// 16 = tel quel, 32/64 (DJ Légendaire) = on répète le motif pour remplir le loop.
 export function fitTemplate(tmpl, steps) {
   if (!tmpl) return null;
-  if (steps >= 16) return tmpl.slice(0, 16);
-  return tmpl.filter((_, i) => i % 2 === 0).slice(0, steps);
+  if (steps <= 8) return tmpl.filter((_, i) => i % 2 === 0).slice(0, steps);
+  if (steps === 16) return tmpl.slice(0, 16);
+  return Array.from({ length: steps }, (_, i) => tmpl[i % 16]);
 }

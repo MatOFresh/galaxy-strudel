@@ -68,7 +68,7 @@ function triggerFxShot(kind) {
   app.fxShot = kind;
   doPlay();                                   // ré-évalue avec le one-shot (clock continu -> pas de saut)
   if (app.fxTimer) clearTimeout(app.fxTimer);
-  const durMs = FX_SHOTS[kind].bars * (1000 / app.transport.cps); // 1 cycle = 1 mesure
+  const durMs = FX_SHOTS[kind].bars * app.barsPerLoop * (1000 / app.transport.cps); // durée en mesures réelles (le motif s'étire en Légendaire)
   app.fxTimer = setTimeout(() => { app.fxShot = null; app.fxTimer = null; if (app.transport.playing) doPlay(); }, durMs);
 }
 // Code complet joué = (motif du mode + tranche master) [+ métronome par-dessus].
@@ -82,7 +82,7 @@ function composeCode(withLimiter) {
   const shot = app.fxShot ? FX_SHOTS[app.fxShot] : null;
   if (shot && shot.mixfx) mix += shot.mixfx;                    // ex : tape-stop (ralenti global)
   let pat = mix + masterFxStr(withLimiter);
-  if (app.metronome) pat = `stack(${pat}, s("click*4").gain(0.35))`;
+  if (app.metronome) pat = `stack(${pat}, s("click*${4 * app.barsPerLoop}").gain(0.35))`; // 1 clic/temps quel que soit le niveau
   if (shot && shot.layer) pat = `stack(${pat}, ${shot.layer})`; // ex : riser / impact / reverse
   return prefix + pat;
 }

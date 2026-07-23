@@ -105,10 +105,12 @@ export function openSoundLibrary(onPick, filterType = null, opts = {}) {
   fileInput.style.display = 'none';
   fileInput.addEventListener('change', async () => {
     importBtn.textContent = 'Import…';
-    await importFiles(fileInput.files);
-    renderCats();
-    importBtn.innerHTML = icon('plus') + ' Importer mes sons';
-    importBtn.append(fileInput); // ré-attache l'input (innerHTML l'a retiré)
+    try { await importFiles(fileInput.files); } catch (_) { toast('Import impossible'); }
+    finally {
+      renderCats();
+      importBtn.innerHTML = icon('plus') + ' Importer mes sons';
+      importBtn.append(fileInput); // ré-attache l'input (innerHTML l'a retiré)
+    }
   });
   importBtn.append(fileInput);
   importBar.append(importBtn);

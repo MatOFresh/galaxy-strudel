@@ -152,7 +152,8 @@ export async function importFiles(fileList) {
     let i = 1;
     while (findSound(id) || entries[id]) { id = base + i; i++; }
     entries[id] = [url];
-    const item = { id, name: id, label: file.name.replace(/\.[^.]+$/, ''), emoji: 'star', type: 'drum', vibe: 'perso', imported: true };
+    const label = (file.name.replace(/\.[^.]+$/, '').replace(/[<>&"']/g, '').trim().slice(0, 40)) || 'Mon son';
+    const item = { id, name: id, label, emoji: 'star', type: 'drum', vibe: 'perso', imported: true };
     imported.push(item);
     added.push(item);
   }
