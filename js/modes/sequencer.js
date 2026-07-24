@@ -306,8 +306,14 @@ export function createSequencer(ctx) {
       const mute = el('button', 'kz-mini' + (d.muted ? ' on' : '')); mute.innerHTML = icon(d.muted ? 'mute' : 'gain');
       mute.addEventListener('click', () => { d.muted = !d.muted; render(); changed(); });
       head.append(mute);
-      const del = el('button', 'kz-mini'); del.innerHTML = icon('trash');
-      del.addEventListener('click', () => { st.drums = st.drums.filter((x) => x !== d); render(); changed(); });
+    }
+    // Poubelle : vide la piste (toutes les cases), sur tous les niveaux.
+    const clear = el('button', 'kz-mini'); clear.innerHTML = icon('trash'); clear.title = 'Vider la piste';
+    clear.addEventListener('click', () => { d.cells = d.cells.map(() => 0); render(); changed(); recordNow(); toast('Piste vidée'); });
+    head.append(clear);
+    if (level !== 'simple') {
+      const del = el('button', 'kz-mini'); del.innerHTML = icon('close'); del.title = "Retirer l'instrument";
+      del.addEventListener('click', () => { st.drums = st.drums.filter((x) => x !== d); render(); changed(); recordNow(); });
       head.append(del);
     }
     row.append(head);
@@ -353,6 +359,9 @@ export function createSequencer(ctx) {
       mute.addEventListener('click', () => { m.muted = !m.muted; render(); changed(); });
       head.append(mute);
     }
+    const clear = el('button', 'kz-mini'); clear.innerHTML = icon('trash'); clear.title = 'Vider la piste';
+    clear.addEventListener('click', () => { m.cells = m.cells.map(() => null); render(); changed(); recordNow(); toast('Piste vidée'); });
+    head.append(clear);
     wrap.append(head);
 
     // grille de notes : rangées = notes, colonnes = pas
@@ -370,7 +379,11 @@ export function createSequencer(ctx) {
         c.dataset.step = i;
         c.addEventListener('click', () => {
           m.cells[i] = (m.cells[i] === r) ? null : r; // une note par colonne
-          render(); changed();
+          // Maj en place de la colonne pour ne pas perdre le défilement horizontal.
+          gridEl.querySelectorAll('.kz-cell.melo[data-step="' + i + '"]').forEach((cell, rr) => {
+            cell.classList.toggle('on', m.cells[i] === rr);
+          });
+          changed();
         });
         cells.append(c);
       }
