@@ -202,6 +202,18 @@ button { font-family: inherit; cursor: pointer; color: var(--txt); }
 .kz-dancer { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: 42px; pointer-events: none; z-index: 4; image-rendering: pixelated; }
 .kz-cell.on.playing { transform: scale(1.12); }
 .kz-cell:active { transform: scale(.9); }
+/* Loops longs (DJ Légendaire, 32/64 pas) : cases à taille fixe + défilement
+   horizontal, au lieu de tout compresser dans la largeur de l'écran. */
+.kz-cells-wrap, .kz-melo-wrap { position: relative; }
+.kz-cells.many { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 26px; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.kz-cells.many .kz-cell { width: 26px; height: 26px; aspect-ratio: auto; }
+.kz-melo .kz-noterows.many { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: thin; padding-bottom: 4px; }
+.kz-melo .kz-noterows.many .kz-noterow { grid-template-columns: 30px max-content; }
+.kz-melo .kz-noterows.many .kz-cells { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 22px; }
+.kz-melo .kz-noterows.many .kz-cell { width: 22px; height: 22px; aspect-ratio: auto; }
+.kz-melo .kz-noterows.many .kz-notename { position: sticky; left: 0; z-index: 3; background: linear-gradient(90deg, #0d0f14 78%, transparent); padding-right: 5px; }
+/* Repère de mesure (tous les 16 pas) */
+.kz-cell.bar { box-shadow: inset 3px 0 0 -1px rgba(87,209,255,.55); }
 
 .kz-melo .kz-noterows { display: flex; flex-direction: column; gap: 4px; }
 .kz-noterow { display: grid; grid-template-columns: 30px 1fr; gap: 6px; align-items: center; }

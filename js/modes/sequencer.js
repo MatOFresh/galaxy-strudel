@@ -312,10 +312,11 @@ export function createSequencer(ctx) {
     }
     row.append(head);
 
-    const cells = el('div', 'kz-cells');
+    const many = st.steps > 16;
+    const cells = el('div', 'kz-cells' + (many ? ' many' : ''));
     cells.style.setProperty('--steps', st.steps);
     d.cells.forEach((on, i) => {
-      const c = el('button', 'kz-cell' + (on ? ' on' : '') + (on === 3 ? ' vel-accent' : '') + (on === 1 ? ' vel-ghost' : '') + (i % 4 === 0 ? ' beat' : ''));
+      const c = el('button', 'kz-cell' + (on ? ' on' : '') + (on === 3 ? ' vel-accent' : '') + (on === 1 ? ' vel-ghost' : '') + (i % 4 === 0 ? ' beat' : '') + (many && i % 16 === 0 && i > 0 ? ' bar' : ''));
       c.dataset.step = i;
       // Tape : off -> normal -> accent (fort) -> ghost (faible) -> off.
       c.addEventListener('click', () => {
@@ -329,8 +330,11 @@ export function createSequencer(ctx) {
       });
       cells.append(c);
     });
-    addDancer(cells);
-    row.append(cells);
+    // wrapper non-défilant : le danseur reste dans l'écran, les cases scrollent dessous.
+    const cellsWrap = el('div', 'kz-cells-wrap');
+    cellsWrap.append(cells);
+    addDancer(cellsWrap);
+    row.append(cellsWrap);
 
     if (level !== 'simple') row.append(renderFxRow(d));
     return row;
@@ -353,7 +357,8 @@ export function createSequencer(ctx) {
 
     // grille de notes : rangées = notes, colonnes = pas
     const rows = m.noteRows;
-    const gridEl = el('div', 'kz-noterows');
+    const many = st.steps > 16;
+    const gridEl = el('div', 'kz-noterows' + (many ? ' many' : ''));
     rows.forEach((note, r) => {
       const line = el('div', 'kz-noterow');
       line.append(el('span', 'kz-notename', note.replace(/[0-9]/g, '')));
@@ -361,7 +366,7 @@ export function createSequencer(ctx) {
       cells.style.setProperty('--steps', st.steps);
       for (let i = 0; i < st.steps; i++) {
         const active = m.cells[i] === r;
-        const c = el('button', 'kz-cell melo' + (active ? ' on' : '') + (i % 4 === 0 ? ' beat' : ''));
+        const c = el('button', 'kz-cell melo' + (active ? ' on' : '') + (i % 4 === 0 ? ' beat' : '') + (many && i % 16 === 0 && i > 0 ? ' bar' : ''));
         c.dataset.step = i;
         c.addEventListener('click', () => {
           m.cells[i] = (m.cells[i] === r) ? null : r; // une note par colonne
@@ -372,8 +377,10 @@ export function createSequencer(ctx) {
       line.append(cells);
       gridEl.append(line);
     });
-    addDancer(gridEl);
-    wrap.append(gridEl);
+    const meloWrap = el('div', 'kz-melo-wrap');
+    meloWrap.append(gridEl);
+    addDancer(meloWrap);
+    wrap.append(meloWrap);
     if (level !== 'simple') wrap.append(renderFxRow(m));
     return wrap;
   }
