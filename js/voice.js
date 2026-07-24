@@ -70,6 +70,54 @@ export function autotune(input, sr, scaleName, strength = 0.9) {
   return out;
 }
 
+// --- Effets vocaux (toujours audibles, contrairement au recalage seul) ---
+const lerpAt = (a, pos) => { const j = Math.floor(pos), fr = pos - j; return (j + 1 < a.length) ? a[j] * (1 - fr) + a[j + 1] * fr : (a[j] || 0); };
+// Ré-échantillonnage : k>1 = plus aigu (chipmunk), k<1 = plus grave (monstre).
+function resamplePitch(input, k) {
+  const outLen = Math.max(1, Math.round(input.length / k));
+  const out = new Float32Array(outLen);
+  for (let i = 0; i < outLen; i++) out[i] = lerpAt(input, i * k);
+  return out;
+}
+// Ring-mod (voix robot) : multiplie par une porteuse -> timbre métallique.
+function ringMod(input, sr, freq, mix) {
+  const out = new Float32Array(input.length);
+  const w = 2 * Math.PI * freq / sr;
+  for (let i = 0; i < input.length; i++) {
+    const carrier = Math.sin(w * i) >= 0 ? 1 : -1;   // carré = robot bien marqué
+    out[i] = input[i] * (1 - mix) + input[i] * carrier * mix;
+  }
+  return out;
+}
+// Vibrato : la hauteur oscille (effet "alien/planant").
+function vibrato(input, sr, rate, depth) {
+  const out = new Float32Array(input.length);
+  const w = 2 * Math.PI * rate / sr; let pos = 0;
+  for (let i = 0; i < out.length; i++) {
+    pos += 1 + depth * Math.sin(w * i);
+    if (pos > input.length - 1) pos = input.length - 1;
+    out[i] = lerpAt(input, pos);
+  }
+  return out;
+}
+
+// Applique l'effet choisi. Renvoie un nouveau Float32Array, toujours audible.
+export function processVoice(input, sr, scaleName, preset, strength = 0.7) {
+  const s = Math.max(0, Math.min(1, strength));
+  switch (preset) {
+    case 'robot': return ringMod(input, sr, 85 + s * 90, 0.55 + s * 0.45);
+    case 'aigu': return resamplePitch(input, 1 + s * 0.7);
+    case 'grave': return resamplePitch(input, 1 - s * 0.45);
+    case 'vibrato': return vibrato(input, sr, 5 + s * 5, s * 0.05);
+    case 'auto':
+    default: {
+      // recalage sur la gamme + léger caractère "produit" pour l'entendre.
+      const tuned = autotune(input, sr, scaleName, Math.min(1, 0.6 + s * 0.4));
+      return ringMod(tuned, sr, 150, s * 0.2);
+    }
+  }
+}
+
 // Encode un Float32 mono en WAV 16-bit -> Blob URL.
 export function encodeWavUrl(samples, sr) {
   const b = new ArrayBuffer(44 + samples.length * 2), v = new DataView(b);
@@ -148,7 +196,8 @@ export function openVoiceStudio(scaleName, onAdd) {
   modal.append(body);
 
   let take = null;     // { mono, sr }
-  let strength = 0.9;
+  let preset = 'auto';
+  let strength = 0.7;
 
   function render() {
     body.innerHTML = '';
@@ -167,16 +216,31 @@ export function openVoiceStudio(scaleName, onAdd) {
       }
     });
     body.append(recBtn);
-    body.append(el('div', 'kz-voice-hint', 'Chante/parle 2–3 s, puis règle l\'autotune.'));
+    body.append(el('div', 'kz-voice-hint', 'Chante/parle 2–3 s, puis choisis un effet.'));
 
     if (take) {
-      // Réglage autotune + effets + preview + ajout
-      const s = slider(`${icon('voice')} Autotune`, strength, (v) => { strength = v; }, { format: (v) => Math.round(v * 100) + '%' });
-      body.append(s);
+      // Choix de l'effet vocal (chaque bouton lance un aperçu immédiat).
+      const PRESETS = [
+        { id: 'auto', icon: 'voice', label: 'Auto' },
+        { id: 'robot', icon: 'robot', label: 'Robot' },
+        { id: 'aigu', icon: 'up', label: 'Aigu' },
+        { id: 'grave', icon: 'down', label: 'Grave' },
+        { id: 'vibrato', icon: 'wah', label: 'Vibrato' },
+      ];
+      const fx = el('div', 'kz-voice-fx');
+      PRESETS.forEach((p) => {
+        const b = el('button', 'kz-voice-fxbtn' + (preset === p.id ? ' on' : ''));
+        b.innerHTML = `<span class="kz-emoji">${icon(p.icon)}</span><span>${p.label}</span>`;
+        b.addEventListener('click', () => { preset = p.id; render(); playBuffer(processVoice(take.mono, take.sr, scaleName, preset, strength), take.sr); });
+        fx.append(b);
+      });
+      body.append(fx);
+
+      body.append(slider(`${icon('sliders')} Force`, strength, (v) => { strength = v; }, { format: (v) => Math.round(v * 100) + '%' }));
 
       const row = el('div', 'kz-voice-row');
-      const preview = el('button', 'kz-chip'); preview.innerHTML = `${icon('play')} Écouter`;
-      preview.addEventListener('click', () => { const tuned = autotune(take.mono, take.sr, scaleName, strength); playBuffer(tuned, take.sr); });
+      const preview = el('button', 'kz-chip'); preview.innerHTML = `${icon('play')} Écouter l'effet`;
+      preview.addEventListener('click', () => playBuffer(processVoice(take.mono, take.sr, scaleName, preset, strength), take.sr));
       row.append(preview);
       const dry = el('button', 'kz-chip'); dry.innerHTML = `${icon('voice')} Voix brute`;
       dry.addEventListener('click', () => playBuffer(take.mono, take.sr));
@@ -185,8 +249,7 @@ export function openVoiceStudio(scaleName, onAdd) {
 
       const add = el('button', 'kz-chip kz-voice-add'); add.innerHTML = `${icon('check')} Ajouter à mes sons`;
       add.addEventListener('click', () => {
-        const tuned = autotune(take.mono, take.sr, scaleName, strength);
-        const url = encodeWavUrl(tuned, take.sr);
+        const url = encodeWavUrl(processVoice(take.mono, take.sr, scaleName, preset, strength), take.sr);
         onAdd(url);
         overlay.remove();
       });
