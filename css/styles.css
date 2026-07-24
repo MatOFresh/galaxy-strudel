@@ -205,8 +205,10 @@ button { font-family: inherit; cursor: pointer; color: var(--txt); }
 /* Loops longs (DJ Légendaire, 32/64 pas) : cases à taille fixe + défilement
    horizontal, au lieu de tout compresser dans la largeur de l'écran. */
 .kz-cells-wrap, .kz-melo-wrap { position: relative; }
-.kz-cells.many { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 26px; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-.kz-cells.many .kz-cell { width: 26px; height: 26px; aspect-ratio: auto; }
+/* Pistes RYTHMIQUES : on plie sur plusieurs lignes de 16 pas (1 mesure/ligne)
+   -> pas de scroll, chaque ligne = une mesure (instinctif). */
+.kz-cells.many { grid-template-columns: repeat(16, 1fr); row-gap: 10px; }
+/* Pistes MÉLODIQUES : défilement horizontal (grille notes x pas). */
 .kz-melo .kz-noterows.many { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: thin; padding-bottom: 4px; }
 .kz-melo .kz-noterows.many .kz-noterow { grid-template-columns: 30px max-content; }
 .kz-melo .kz-noterows.many .kz-cells { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 22px; }
